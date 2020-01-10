@@ -18,7 +18,6 @@ def help_info():
 def inputs():
     global szalanyag_nev
     input_list = []
-
     szalanyag_nev = input("\nAdd meg a vágandó szál nevét: ")
 
     if szalanyag_nev == "e": ## Ha a beírt billentyű 'e', akkor kilép.
@@ -191,5 +190,8 @@ try:
 except Escape as e:
     print(e.value)
 
+except KeyboardInterrupt:
+    print("\nKilépés a programból!")
+
 credits()
-i=input("\nNyomj Enter-t a bezáráshoz!")
+sys.exit()
