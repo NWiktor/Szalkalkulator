@@ -44,7 +44,7 @@ def key_input(string):
     elif ki == "f":
         mod_fureszlap()
     elif ki == "x":
-        tulhossz_torles()
+        tulhossz_torles() # Biztonság kedvéért
         if szalak == []:
             print("Nem adtál hozzá vágandó szálat!")
         else:
@@ -152,8 +152,8 @@ def kalk():
 
         for i in range(0, len(szalak)): # Végigmegyek a szálak tömb minden elemén
             if szalak[i] <= maradek: # Ha az aktuális száldarab rövidebb v egyenlő, mint a maradék
-                akt_hossz += szalak[i]  # Aktuális szálhosszhoz hozzáadom az elemet
-                maradek -= szalak[i] # Maradékból kivonom az elemet
+                akt_hossz += (szalak[i] + fureszlap_vast)  # Aktuális szálhosszhoz hozzáadom az elemet
+                maradek -= (szalak[i] + fureszlap_vast) # Maradékból kivonom az elemet
                 akt_szal += "| {0:>4} ".format(szalak[i]) # A szál összetételhez hozzáadom az elemet
                 torolni.append(i) # torlendő elemek index listájához hozzáadni az aktuálisat
 
@@ -195,7 +195,7 @@ def kalk():
 
 
 def credits():
-    print("\nSzalkalkulátor V1.0.1")
+    print("\nSzalkalkulátor V1.2")
     print("Wetzl Viktor - 2020-01-11 - (C) Minden jog fenntartva!")
 
 
@@ -210,8 +210,8 @@ class Escape(Exception):
 print("\nHello Jani!")
 help_info() ## Alap parancsok kiírása
 
-try: # Amíg ki nem lépek Escape exceptionnel, addig ismétli a kalkulációt/kiértékelést az inputs fv.-en belüli loop miatt
-    # while True:
+try: # Amíg ki nem lépek Escape exceptionnel, addig ismétli
+    # a kalkulációt/kiértékelést az inputs fv.-en belüli loop miatt
     inputs()
 
 except Escape as e:
@@ -221,4 +221,5 @@ except KeyboardInterrupt:
     print("\nKilépés a programból!")
 
 credits()
+input("Kilépéshez nyomj 'Enter'-t!")
 sys.exit()
