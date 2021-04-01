@@ -18,11 +18,155 @@ tulajdonjog hatálya alá eső felhasználások esetén is.
 """
 
 import sys
+from tkinter import ttk
+import tkinter as tk
+# from tkinter import StringVar
 
+release_date = "2021-04-21"
 celhossz = 6000 # Elérendő szálhossz (mm)
 fureszlap_vast = 2 # Fűrészlap vastagsága (mm)
 szalak = []  # 2D tömb, benne a szálhosszakkal
 szalanyag_nev = "" ## Szálanyag elnevezése (pl.: 20x20x3 acél zártszv.)
+
+
+class App():
+    def __init__(self, master):
+        self.master = master
+        self.frame = tk.Frame(self.master)
+        self.master.geometry("560x405+200+200") #Ablak mérete +xpos(v) +ypos(f)
+        self.master.maxsize(560, 405) # Az ablak max. mérete
+        self.master.resizable(width=False, height=False)
+        self.init_window() # Inicializáló fv. meghívása
+
+
+    # Init_window létrehozása (konstruktor)
+    def init_window(self):
+        global release_date
+
+        self.master.title("Szálkalkulátor alkalmazás") # Ablak cím beállítása
+
+        self.frame.grid()
+        self.frame.grid_columnconfigure(0, weight=1, minsize=140)
+        self.frame.grid_columnconfigure(1, weight=1, minsize=140)
+        self.frame.grid_columnconfigure(2, weight=1, minsize=264)
+        self.frame.grid_columnconfigure(3, weight=1, minsize=16)
+
+        style = ttk.Style()
+        # style.theme_use('xpnative')
+        style.theme_use('vista')
+
+        # Widgets:
+        n = 0 # Row (line) number
+        self.help_button = ttk.Button(self.frame, text="Segítség",
+        command=self.help)
+        self.help_button.grid(row=n, column=0, sticky = 'WE',
+        padx = (5, 2.5), pady=2.5)
+
+        self.close_button = ttk.Button(self.frame, text="Kijelentkezés",
+        command=self.close_window)
+        self.close_button.grid(row=n, column=1, sticky = 'WE',
+        padx = 2.5, pady=2.5)
+
+        n += 1
+        self.about = ttk.Label(self.frame,
+        text="by Wetzl Viktor - {0}".format(release_date), anchor="center")
+        # self.about.bind("<Button-1>", redirect_to_webpage)
+        self.about.grid(row=n, columnspan = 2, sticky = 'W'+'E', pady=5)
+
+        self.vert_scroll = ttk.Scrollbar(self.frame, orient="vertical")
+        self.vert_scroll.grid(row=0, rowspan = 4, column = 3, sticky='N'+'S',
+        padx = (2.5, 5), pady=(5, 2.5))
+
+        self.vert_scroll2 = ttk.Scrollbar(self.frame, orient="vertical")
+        self.vert_scroll2.grid(row=4, rowspan = 5, column = 3, sticky='N'+'S',
+        padx = (2.5, 5), pady=(2.5, 5))
+
+        # Treeview:
+        self.update() # Betölti a treeview-et
+
+
+    def update(self):
+        # self.database, self.mainkey = ppc.get_pos_db()
+
+        #Tree 1
+        self.tree = ttk.Treeview(self.frame, height = 10,
+        yscrollcommand = self.vert_scroll.set)
+        self.vert_scroll.config(command=self.tree.yview)
+
+        self.tree["columns"]=("1", "2")
+        self.tree.column("#0", width=30, minwidth=30, stretch="False")
+        self.tree.column("1", width=100, minwidth=100, stretch="False")
+        self.tree.column("2", width=100, minwidth=100, stretch="False")
+
+        self.tree.heading("#0",text="Pos",anchor=tk.W)
+        self.tree.heading("1", text="Nbr.",anchor=tk.W)
+        self.tree.heading("2", text="Length",anchor=tk.W)
+
+        # Level 1
+        # for p in self.mainkey: # List of hdwrs
+        #     self.tree.insert("", "end", iid = p, text=p,
+        #     values=("","","","",""))
+        #     self.tree.item(p, open=True)
+        #
+        # # Level 2
+        # for sec_id in list(self.database.keys()):
+        #     sec = self.database[sec_id]
+        #     mk = sec.get("hardware", "Ismeretlen") # Main key
+        #     title = sec.get("title", "")
+        #     desc = sec.get("description", "")
+        #     author = sec.get("author", "Ismeretlen")
+        #     date = sec.get("date", "-")
+        #
+        #     self.tree.insert(mk, "end", text="\u25B6",
+        #     values=(sec_id, title, desc, author, date))
+
+        self.tree.grid(row=0, rowspan=4, column = 2, sticky='W'+'E',
+        padx = 2.5, pady = (5, 2.5))
+
+
+        #Tree 2
+        self.tree = ttk.Treeview(self.frame, height = 10,
+        yscrollcommand = self.vert_scroll.set)
+        self.vert_scroll.config(command=self.tree.yview)
+
+        self.tree["columns"]=("1", "2")
+        self.tree.column("#0", width=30, minwidth=30, stretch="False")
+        self.tree.column("1", width=100, minwidth=100, stretch="False")
+        self.tree.column("2", width=100, minwidth=100, stretch="False")
+
+        self.tree.heading("#0",text="Pos",anchor=tk.W)
+        self.tree.heading("1", text="Nbr.",anchor=tk.W)
+        self.tree.heading("2", text="Length",anchor=tk.W)
+
+        # Level 1
+        # for p in self.mainkey: # List of hdwrs
+        #     self.tree.insert("", "end", iid = p, text=p,
+        #     values=("","","","",""))
+        #     self.tree.item(p, open=True)
+        #
+        # # Level 2
+        # for sec_id in list(self.database.keys()):
+        #     sec = self.database[sec_id]
+        #     mk = sec.get("hardware", "Ismeretlen") # Main key
+        #     title = sec.get("title", "")
+        #     desc = sec.get("description", "")
+        #     author = sec.get("author", "Ismeretlen")
+        #     date = sec.get("date", "-")
+        #
+        #     self.tree.insert(mk, "end", text="\u25B6",
+        #     values=(sec_id, title, desc, author, date))
+
+        self.tree.grid(row=0, rowspan=4, column = 2, sticky='W'+'E',
+        padx = 2.5, pady = (5, 2.5))
+
+
+    def help(self):
+        help_info()
+
+
+    def close_window(self):
+        self.master.destroy()
+        print("EXIT")
 
 
 def help_info():
@@ -224,20 +368,30 @@ class Escape(Exception):
         return repr(self.value)
 
 
+
+
+
 ### Fő program
-print("\nHello!")
-help_info() ## Alap parancsok kiírása
+if __name__ == '__main__':
+    root = tk.Tk()
+    app = App(root)
+    # root.wm_protocol('WM_DELETE_WINDOW', app.close_window) # 'X' gomb felülírása
+    root.mainloop()
 
-try: # Amíg ki nem lépek Escape exceptionnel, addig ismétli
-    # a kalkulációt/kiértékelést az inputs fv.-en belüli loop miatt
-    inputs()
 
-except Escape as e:
-    print(e.value)
+    print("\nHello!")
+    help_info() ## Alap parancsok kiírása
 
-except KeyboardInterrupt:
-    print("\nKilépés a programból!")
+    try: # Amíg ki nem lépek Escape exceptionnel, addig ismétli
+        # a kalkulációt/kiértékelést az inputs fv.-en belüli loop miatt
+        inputs()
 
-credits()
-input("Kilépéshez nyomj 'Enter'-t!")
-sys.exit()
+    except Escape as e:
+        print(e.value)
+
+    except KeyboardInterrupt:
+        print("\nKilépés a programból!")
+
+    credits()
+    input("Kilépéshez nyomj 'Enter'-t!")
+    sys.exit()

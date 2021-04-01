@@ -1,6 +1,8 @@
 ECHO OFF
 chcp 65001
-cd dist
 cls
-main_prog.py
+python main_prog.py
+
+rem cd dist
 rem main_prog.exe
+rem PAUSE
