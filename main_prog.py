@@ -20,7 +20,6 @@ tulajdonjog hatálya alá eső felhasználások esetén is.
 import sys
 from tkinter import ttk
 import tkinter as tk
-# from tkinter import StringVar
 
 release_date = "2021-04-21"
 celhossz = 6000 # Elérendő szálhossz (mm)
@@ -29,12 +28,24 @@ szalak = []  # 2D tömb, benne a szálhosszakkal
 szalanyag_nev = "" ## Szálanyag elnevezése (pl.: 20x20x3 acél zártszv.)
 
 
+class Stock_element(tk.Canvas):
+    global celhossz
+    def __init__(self, master=None, max_length = celhossz, elements=[], width=200, height=30, **kwargs):
+        tk.Canvas.__init__(self, master, **kwargs)
+
+        # Calculate relative point of rectangle
+        print(elements)
+
+
+        self.create_rectangle(65, 35, 135, 65, fill="yellow")
+
+
 class App():
     def __init__(self, master):
         self.master = master
         # self.frame = tk.Frame(self.master)
-        self.master.geometry("570x475+200+200") #Ablak mérete +xpos(v) +ypos(f)
-        self.master.maxsize(570, 475) # Az ablak max. mérete
+        self.master.geometry("600x500+100+100") #Ablak mérete +xpos(v) +ypos(f)
+        self.master.maxsize(600, 500) # Az ablak max. mérete
         self.master.resizable(width=False, height=False)
         self.init_window() # Inicializáló fv. meghívása
 
@@ -51,8 +62,6 @@ class App():
         self.leftframe.grid()
         self.leftframe.grid_columnconfigure(0, weight=1, minsize=140)
         self.leftframe.grid_columnconfigure(1, weight=1, minsize=140)
-        # self.leftframe.grid_columnconfigure(2, weight=1, minsize=264)
-        # self.leftframe.grid_columnconfigure(3, weight=1, minsize=16)
 
         style = ttk.Style()
         # style.theme_use('xpnative')
@@ -86,9 +95,15 @@ class App():
         self.vert_scroll.grid(row = 0, column = 1, sticky='N'+'S',
         padx = (2.5, 5), pady=(5, 2.5))
 
-        self.vert_scroll2 = ttk.Scrollbar(self.rightframe, orient="vertical")
-        self.vert_scroll2.grid(row = 1, column = 1, sticky='N'+'S',
-        padx = (2.5, 5), pady=(2.5, 5))
+
+        self.downframe = tk.Frame(self.master, width=540, height = 200)
+        self.downframe.grid(row=1, column=0, columnspan=2)
+        self.downframe.grid_columnconfigure(0, weight=1, minsize=545)
+        self.downframe.grid_columnconfigure(1, weight=1, minsize=16)
+
+        # self.vert_scroll2 = ttk.Scrollbar(self.downframe, orient="vertical")
+        # self.vert_scroll2.grid(row = 0, column = 1, sticky='N'+'S',
+        # padx = (2.5, 5), pady=(2.5, 5))
 
         # Treeview:
         self.update() # Betölti a treeview-et
@@ -102,20 +117,26 @@ class App():
         yscrollcommand = self.vert_scroll.set)
         self.vert_scroll.config(command=self.tree.yview)
 
-        self.tree["columns"]=("1", "2")
+        self.tree["columns"]=("1", "2", "3")
         self.tree.column("#0", width=30, minwidth=30, stretch="False")
-        self.tree.column("1", width=100, minwidth=100, stretch="False")
-        self.tree.column("2", width=100, minwidth=100, stretch="False")
+        self.tree.column("1", width=50, minwidth=50, stretch="False")
+        self.tree.column("2", width=50, minwidth=50, stretch="False")
+        self.tree.column("3", width=100, minwidth=100, stretch="False")
 
         self.tree.heading("#0",text="Pos",anchor=tk.W)
         self.tree.heading("1", text="Nbr.",anchor=tk.W)
         self.tree.heading("2", text="Length",anchor=tk.W)
+        self.tree.heading("3", text="Label",anchor=tk.W)
 
         # Level 1
-        # for p in self.mainkey: # List of hdwrs
-        #     self.tree.insert("", "end", iid = p, text=p,
-        #     values=("","","","",""))
-        #     self.tree.item(p, open=True)
+        dict = {"1":{"nbr": "2", "len": 2345, "label": "proba"},
+        "2":{"nbr": "34", "len": 245633, "label": "proba2"}}
+
+
+        for p in dict.keys(): # List of hdwrs
+            self.tree.insert("", "end", iid = p, text=p,
+            values=(dict[p]["nbr"],dict[p]["len"],dict[p]["label"]))
+            self.tree.item(p, open=True)
         #
         # # Level 2
         # for sec_id in list(self.database.keys()):
@@ -132,20 +153,28 @@ class App():
         self.tree.grid(row=0, column = 0, sticky='W'+'E',
         padx = 2.5, pady = (5, 2.5))
 
+        szalak = [[1500, 1500, 1000, 500], []]
+
+        c = 0
+        for m in szalak:
+            self.stock_element = Stock_element()
+
+
+
 
         #Tree 2
-        self.tree2 = ttk.Treeview(self.rightframe, height = 10,
-        yscrollcommand = self.vert_scroll2.set)
-        self.vert_scroll2.config(command=self.tree2.yview)
-
-        self.tree2["columns"]=("1", "2")
-        self.tree2.column("#0", width=30, minwidth=30, stretch="False")
-        self.tree2.column("1", width=100, minwidth=100, stretch="False")
-        self.tree2.column("2", width=100, minwidth=100, stretch="False")
-
-        self.tree2.heading("#0",text="Pos",anchor=tk.W)
-        self.tree2.heading("1", text="Nbr.",anchor=tk.W)
-        self.tree2.heading("2", text="Length",anchor=tk.W)
+        # self.tree2 = ttk.Treeview(self.downframe, height = 10,
+        # yscrollcommand = self.vert_scroll2.set)
+        # self.vert_scroll2.config(command=self.tree2.yview)
+        #
+        # self.tree2["columns"]=("1", "2")
+        # self.tree2.column("#0", width=30, minwidth=30, stretch="False")
+        # self.tree2.column("1", width=100, minwidth=100, stretch="False")
+        # self.tree2.column("2", width=100, minwidth=100, stretch="False")
+        #
+        # self.tree2.heading("#0",text="Pos",anchor=tk.W)
+        # self.tree2.heading("1", text="Nbr.",anchor=tk.W)
+        # self.tree2.heading("2", text="Length",anchor=tk.W)
 
         # Level 1
         # for p in self.mainkey: # List of hdwrs
@@ -165,8 +194,8 @@ class App():
         #     self.tree.insert(mk, "end", text="\u25B6",
         #     values=(sec_id, title, desc, author, date))
 
-        self.tree2.grid(row=1, column = 0, sticky='N'+'W'+'S'+'E',
-        padx = 2.5, pady = (2.5, 5))
+        # self.tree2.grid(row=0, column = 0, sticky='N'+'W'+'S'+'E',
+        # padx = (5, 2.5), pady = (2.5, 5))
 
 
     def help(self):
