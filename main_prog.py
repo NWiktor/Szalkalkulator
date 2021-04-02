@@ -17,6 +17,7 @@ sokszorosításra, szerkesztésre, értékesítésre nézve, valamint az ipari
 tulajdonjog hatálya alá eső felhasználások esetén is.
 """
 
+import uuid
 import sys
 from tkinter import ttk
 import tkinter as tk
@@ -72,6 +73,10 @@ class App():
         self.stock_length = 6000 # mm
         self.cutting_width = 3 # mm
 
+        self.stocks = {}
+        self.stocks = {"A" : {"nbr": 2, "len": 2345, "label": "proba"},
+        "B" : {"nbr": 34, "len": 245633, "label": "proba2"}}
+
         self.results = []
         self.results = [[1450, 1450, 1450, 1450], [500, 500], [1000, 1000], [200, 400, 800]]
 
@@ -120,9 +125,10 @@ class App():
         self.label1.grid(row=n, column=0, sticky = 'W',
         padx = (5, 2.5), pady=(5, 2.5))
 
-        # self.textbox1 = ttk.Entry(self.leftframe)
         self.textbox1 = ttk.Entry(self.leftframe)
         self.textbox1.insert(0, "{0}".format(self.stock_length))
+        self.textbox1.bind("<Button-1>", self.clear_field)
+        self.textbox1.bind("<FocusOut>", self.update_field)
         self.textbox1.grid(row=n, column=1, sticky = 'WE',
         padx = 2.5, pady=(5, 2.5))
 
@@ -131,11 +137,63 @@ class App():
         self.label2.grid(row=n, column=0, sticky = 'W',
         padx = (5, 2.5), pady=(5, 2.5))
 
-        # self.textbox1 = ttk.Entry(self.leftframe)
         self.textbox2 = ttk.Entry(self.leftframe)
         self.textbox2.insert(0, "{0}".format(self.cutting_width))
+        self.textbox2.bind("<Button-1>", self.clear_field)
+        self.textbox2.bind("<FocusOut>", self.update_field)
         self.textbox2.grid(row=n, column=1, sticky = 'WE',
         padx = 2.5, pady=(5, 2.5))
+
+        n += 1
+        self.separator = ttk.Separator(self.leftframe, orient=tk.HORIZONTAL)
+        self.separator.grid(row=n, column=0, columnspan=2, sticky='WE',
+        pady=5, padx=(5, 2.5))
+
+        n += 1
+        self.label3 = ttk.Label(self.leftframe, text="Címke")
+        self.label3.grid(row=n, column=0, sticky = 'W',
+        padx = (5, 2.5), pady=(5, 2.5))
+
+        self.textbox3 = ttk.Entry(self.leftframe)
+        self.textbox3.insert(0, "")
+        self.textbox3.grid(row=n, column=1, sticky = 'WE',
+        padx = 2.5, pady=(5, 2.5))
+
+        n += 1
+        self.label4 = ttk.Label(self.leftframe, text="Mennyiség")
+        self.label4.grid(row=n, column=0, sticky = 'W',
+        padx = (5, 2.5), pady=(5, 2.5))
+
+        self.textbox4 = ttk.Entry(self.leftframe)
+        self.textbox4.insert(0, "")
+        self.textbox4.grid(row=n, column=1, sticky = 'WE',
+        padx = 2.5, pady=(5, 2.5))
+
+        n += 1
+        self.label5 = ttk.Label(self.leftframe, text="Hossz")
+        self.label5.grid(row=n, column=0, sticky = 'W',
+        padx = (5, 2.5), pady=(5, 2.5))
+
+        self.textbox5 = ttk.Entry(self.leftframe)
+        self.textbox5.insert(0, "")
+        self.textbox5.grid(row=n, column=1, sticky = 'WE',
+        padx = 2.5, pady=(5, 2.5))
+
+        n += 1
+        self.add_button = ttk.Button(self.leftframe, text="Hozzáad",
+        command=self.add_item)
+        self.add_button.grid(row=n, column=0, sticky = 'WE',
+        padx = (5, 2.5), pady=2.5)
+
+        self.delete_button = ttk.Button(self.leftframe, text="Törlés",
+        command=self.delete_item)
+        self.delete_button.grid(row=n, column=1, sticky = 'WE',
+        padx = 2.5, pady=2.5)
+
+        n += 1
+        self.separator = ttk.Separator(self.leftframe, orient=tk.HORIZONTAL)
+        self.separator.grid(row=n, column=0, columnspan=2, sticky='WE',
+        pady=5, padx=(5, 2.5))
 
         n += 1
         self.help_button = ttk.Button(self.leftframe, text="Segítség",
@@ -152,7 +210,8 @@ class App():
         self.about = ttk.Label(self.leftframe,
         text="by Wetzl Viktor - {0}".format(release_date), anchor="center")
         # self.about.bind("<Button-1>", redirect_to_webpage)
-        self.about.grid(row=n, columnspan = 2, sticky = 'W'+'E', pady=5)
+        self.about.grid(row=n, column=0, columnspan=2, sticky = 'WE',
+        pady=5, padx=(5, 2.5))
 
 
         # Widgets at rightframe:
@@ -166,45 +225,31 @@ class App():
 
 
     def update(self):
-        # self.database, self.mainkey = ppc.get_pos_db()
 
         #Tree 1
         self.tree = ttk.Treeview(self.rightframe, height = 10,
-        yscrollcommand = self.vert_scroll.set)
+        yscrollcommand = self.vert_scroll.set, selectmode="browse")
         self.vert_scroll.config(command=self.tree.yview)
 
         self.tree["columns"]=("1", "2", "3")
-        self.tree.column("#0", width=30, minwidth=30, stretch="False")
+        self.tree.column("#0", width=40, minwidth=40, stretch="False")
         self.tree.column("1", width=50, minwidth=50, stretch="False")
         self.tree.column("2", width=50, minwidth=50, stretch="False")
         self.tree.column("3", width=100, minwidth=100, stretch="False")
 
-        self.tree.heading("#0",text="Pos",anchor=tk.W)
-        self.tree.heading("1", text="Nbr.",anchor=tk.W)
-        self.tree.heading("2", text="Length",anchor=tk.W)
-        self.tree.heading("3", text="Label",anchor=tk.W)
+        self.tree.heading("#0",text="Poz.",anchor=tk.W)
+        self.tree.heading("1", text="Menny.",anchor=tk.W)
+        self.tree.heading("2", text="Hossz",anchor=tk.W)
+        self.tree.heading("3", text="Címke",anchor=tk.W)
 
         # Level 1
-        dict = {"1":{"nbr": "2", "len": 2345, "label": "proba"},
-        "2":{"nbr": "34", "len": 245633, "label": "proba2"}}
-
-
-        for p in dict.keys(): # List of hdwrs
-            self.tree.insert("", "end", iid = p, text=p,
-            values=(dict[p]["nbr"],dict[p]["len"],dict[p]["label"]))
+        i = 1
+        for p in self.stocks.keys():
+            index = i*10
+            self.tree.insert("", "end", iid = p, text=index,
+            values=(self.stocks[p]["nbr"], self.stocks[p]["len"], self.stocks[p]["label"]))
             self.tree.item(p, open=True)
-        #
-        # # Level 2
-        # for sec_id in list(self.database.keys()):
-        #     sec = self.database[sec_id]
-        #     mk = sec.get("hardware", "Ismeretlen") # Main key
-        #     title = sec.get("title", "")
-        #     desc = sec.get("description", "")
-        #     author = sec.get("author", "Ismeretlen")
-        #     date = sec.get("date", "-")
-        #
-        #     self.tree.insert(mk, "end", text="\u25B6",
-        #     values=(sec_id, title, desc, author, date))
+            i += 1
 
         self.tree.grid(row=0, column = 0, sticky='WE',
         padx = 2.5, pady = (5, 2.5))
@@ -220,8 +265,70 @@ class App():
             self.infolabel1 = ttk.Label(self.downframe,
             text="x{0}".format(multiply), anchor="center")
             self.infolabel1.grid(row=1, column=c, sticky='NS', padx=(5, 0))
-
             c += 1
+
+
+    def clear_field(self, event=None):
+        print("clear_field")
+        # self.textbox1.delete(0, tk.END)
+        pass
+
+
+    def update_field(self, event=None):
+        print("focus_out")
+        self.stock_length = int(self.textbox1.get())
+        self.cutting_width = int(self.textbox2.get())
+
+        print(self.stock_length)
+        print(self.cutting_width)
+
+        self.update()
+        self.calculate()
+
+
+    def add_item(self):
+        print("Add item")
+
+        uuid_str = str(uuid.uuid4())
+        label = str(self.textbox3.get())
+        nbr = int(self.textbox4.get())
+        len = int(self.textbox5.get())
+
+        if len > self.stock_length:
+            print("Szál túl hosszú!")
+            pass
+
+        else:
+            self.stocks.update({uuid_str : {"nbr": nbr, "len": len, "label" : label}})
+
+        self.update()
+        self.calculate()
+
+
+    def delete_item(self):
+        print("Delete item")
+
+        ids = []
+        sections = []
+        sel = self.tree.selection() # Kiválasztott 'item'-ek listája
+
+        for s in sel: # Kiválasztott elemeken végigiterálok
+            # print(s)
+            if s in self.stocks:
+                del self.stocks[s]
+
+        self.update()
+        self.calculate()
+
+
+    del oversized_item(self):
+        print("Túl hosszú elem törlése")
+        pass
+
+
+    def calculate(self):
+        print("Calculate")
+        self.update()
 
 
     def help(self):
@@ -233,6 +340,8 @@ class App():
         print("EXIT")
 
 
+
+# Obsolete funcs to be refactored
 def help_info():
     print("\n-- INFO --")
     print("A szálanyagok alaphosszúsága: {0} mm".format(celhossz))
@@ -442,20 +551,24 @@ if __name__ == '__main__':
     # root.wm_protocol('WM_DELETE_WINDOW', app.close_window) # 'X' gomb felülírása
     root.mainloop()
 
-
-    print("\nHello!")
-    help_info() ## Alap parancsok kiírása
-
-    try: # Amíg ki nem lépek Escape exceptionnel, addig ismétli
-        # a kalkulációt/kiértékelést az inputs fv.-en belüli loop miatt
-        inputs()
-
-    except Escape as e:
-        print(e.value)
-
-    except KeyboardInterrupt:
-        print("\nKilépés a programból!")
-
-    credits()
-    input("Kilépéshez nyomj 'Enter'-t!")
     sys.exit()
+
+
+
+
+    # print("\nHello!")
+    # help_info() ## Alap parancsok kiírása
+    #
+    # try: # Amíg ki nem lépek Escape exceptionnel, addig ismétli
+    #     # a kalkulációt/kiértékelést az inputs fv.-en belüli loop miatt
+    #     inputs()
+    #
+    # except Escape as e:
+    #     print(e.value)
+    #
+    # except KeyboardInterrupt:
+    #     print("\nKilépés a programból!")
+    #
+    # credits()
+    # input("Kilépéshez nyomj 'Enter'-t!")
+    # sys.exit()
