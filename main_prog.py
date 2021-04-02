@@ -28,25 +28,54 @@ szalak = []  # 2D tömb, benne a szálhosszakkal
 szalanyag_nev = "" ## Szálanyag elnevezése (pl.: 20x20x3 acél zártszv.)
 
 
-class Stock_element(tk.Canvas):
+class Stock_pattern(tk.Canvas):
     global celhossz
-    def __init__(self, master=None, max_length = celhossz, elements=[], width=200, height=30, **kwargs):
-        tk.Canvas.__init__(self, master, **kwargs)
+
+    def __init__(self, master, max_length = celhossz, elements=[], **kwargs):
+
+        self.field_height = 250
+        self.cutting_width = 2
+        self.text_limit = 400
+
+        tk.Canvas.__init__(self, master, bg="green", width=40,
+        height=self.field_height, **kwargs)
 
         # Calculate relative point of rectangle
         print(elements)
 
+        p = float(max_length/self.field_height)
+        print(p)
 
-        self.create_rectangle(65, 35, 135, 65, fill="yellow")
+        act_length = 0
+
+        for k in elements:
+            item_length = int(k/p)
+
+            # Item
+            self.create_rectangle(0, act_length,
+            42, act_length+item_length-self.cutting_width, fill="gray", width=0)
+
+            # Item text
+            if k >= self.text_limit:
+                self.create_text(20, act_length+(item_length)/2,
+                font="Times 10", text="{0}".format(k))
+
+            # Cutting width
+            self.create_rectangle(0, act_length+item_length-self.cutting_width,
+            42, act_length+item_length, fill="black", width=0)
+            act_length += item_length
 
 
 class App():
     def __init__(self, master):
         self.master = master
-        # self.frame = tk.Frame(self.master)
         self.master.geometry("600x500+100+100") #Ablak mérete +xpos(v) +ypos(f)
         self.master.maxsize(600, 500) # Az ablak max. mérete
         self.master.resizable(width=False, height=False)
+
+        self.results = []
+        self.results = [[1450, 1450, 1450, 1450], [500, 500], [1000, 1000], [200, 400, 800]]
+
         self.init_window() # Inicializáló fv. meghívása
 
 
@@ -56,28 +85,51 @@ class App():
 
         self.master.title("Szálkalkulátor by W.V.") # Ablak cím beállítása
 
-        self.leftframe = tk.Frame(self.master, width=280, height = 450)
-        self.leftframe.grid(row=0, column=0)
+        # Widgets at master:
+        self.leftframe = tk.Frame(self.master, width=300, height = 300)
+        self.leftframe.grid(row=0, column=0, sticky="NWES")
+        self.leftframe.config(bg="blue")
+        self.leftframe.grid_columnconfigure(0, weight=1, minsize=150)
+        self.leftframe.grid_columnconfigure(1, weight=1, minsize=150)
 
-        self.leftframe.grid()
-        self.leftframe.grid_columnconfigure(0, weight=1, minsize=140)
-        self.leftframe.grid_columnconfigure(1, weight=1, minsize=140)
+        self.rightframe = tk.Frame(self.master, width=300, height = 300)
+        self.rightframe.grid(row=0, column=1, sticky="NWES")
+        self.rightframe.config(bg="red")
+        self.rightframe.grid_columnconfigure(0, weight=1, minsize=275)
+        self.rightframe.grid_columnconfigure(1, weight=1, minsize=25)
+
+        self.separator = ttk.Separator(self.master, orient=tk.HORIZONTAL)
+        self.separator.grid(row = 1, columnspan = 2, sticky = 'WE',
+        pady=5, padx=5)
+
+        self.downframe = tk.Frame(self.master, width=600, height = 200)
+        self.downframe.grid(row = 2, column = 0, columnspan=2, sticky="NWS")
+        self.downframe.config(bg="black")
+        self.downframe.grid_rowconfigure(0, weight=1, minsize=200)
+
+        # self.hori_scroll = ttk.Scrollbar(self.master, orient=tk.HORIZONTAL)
+        # self.hori_scroll.grid(row = 3, columnspan = 2, sticky= 'WE',
+        # padx = 5, pady=(2.5, 5))
 
         style = ttk.Style()
         # style.theme_use('xpnative')
         style.theme_use('vista')
 
-        # Widgets:
+        # Widgets at leftframe:
         n = 0 # Row (line) number
+
+
+
+        n += 1
         self.help_button = ttk.Button(self.leftframe, text="Segítség",
         command=self.help)
         self.help_button.grid(row=n, column=0, sticky = 'WE',
-        padx = (5, 2.5), pady=2.5)
+        padx = (5, 2.5), pady=(5, 2.5))
 
         self.close_button = ttk.Button(self.leftframe, text="Kijelentkezés",
         command=self.close_window)
         self.close_button.grid(row=n, column=1, sticky = 'WE',
-        padx = 2.5, pady=2.5)
+        padx = 2.5, pady=(5, 2.5))
 
         n += 1
         self.about = ttk.Label(self.leftframe,
@@ -86,26 +138,13 @@ class App():
         self.about.grid(row=n, columnspan = 2, sticky = 'W'+'E', pady=5)
 
 
-        self.rightframe = tk.Frame(self.master, width=280, height = 450)
-        self.rightframe.grid(row=0, column=1)
-        self.rightframe.grid_columnconfigure(0, weight=1, minsize=264)
-        self.rightframe.grid_columnconfigure(1, weight=1, minsize=16)
-
+        # Widgets at rightframe:
         self.vert_scroll = ttk.Scrollbar(self.rightframe, orient="vertical")
         self.vert_scroll.grid(row = 0, column = 1, sticky='N'+'S',
         padx = (2.5, 5), pady=(5, 2.5))
 
 
-        self.downframe = tk.Frame(self.master, width=540, height = 200)
-        self.downframe.grid(row=1, column=0, columnspan=2)
-        self.downframe.grid_columnconfigure(0, weight=1, minsize=545)
-        self.downframe.grid_columnconfigure(1, weight=1, minsize=16)
-
-        # self.vert_scroll2 = ttk.Scrollbar(self.downframe, orient="vertical")
-        # self.vert_scroll2.grid(row = 0, column = 1, sticky='N'+'S',
-        # padx = (2.5, 5), pady=(2.5, 5))
-
-        # Treeview:
+        # Dynamic update of contents:
         self.update() # Betölti a treeview-et
 
 
@@ -150,52 +189,16 @@ class App():
         #     self.tree.insert(mk, "end", text="\u25B6",
         #     values=(sec_id, title, desc, author, date))
 
-        self.tree.grid(row=0, column = 0, sticky='W'+'E',
+        self.tree.grid(row=0, column = 0, sticky='WE',
         padx = 2.5, pady = (5, 2.5))
 
-        szalak = [[1500, 1500, 1000, 500], []]
-
+        # Display patterns
         c = 0
-        for m in szalak:
-            self.stock_element = Stock_element()
-
-
-
-
-        #Tree 2
-        # self.tree2 = ttk.Treeview(self.downframe, height = 10,
-        # yscrollcommand = self.vert_scroll2.set)
-        # self.vert_scroll2.config(command=self.tree2.yview)
-        #
-        # self.tree2["columns"]=("1", "2")
-        # self.tree2.column("#0", width=30, minwidth=30, stretch="False")
-        # self.tree2.column("1", width=100, minwidth=100, stretch="False")
-        # self.tree2.column("2", width=100, minwidth=100, stretch="False")
-        #
-        # self.tree2.heading("#0",text="Pos",anchor=tk.W)
-        # self.tree2.heading("1", text="Nbr.",anchor=tk.W)
-        # self.tree2.heading("2", text="Length",anchor=tk.W)
-
-        # Level 1
-        # for p in self.mainkey: # List of hdwrs
-        #     self.tree.insert("", "end", iid = p, text=p,
-        #     values=("","","","",""))
-        #     self.tree.item(p, open=True)
-        #
-        # # Level 2
-        # for sec_id in list(self.database.keys()):
-        #     sec = self.database[sec_id]
-        #     mk = sec.get("hardware", "Ismeretlen") # Main key
-        #     title = sec.get("title", "")
-        #     desc = sec.get("description", "")
-        #     author = sec.get("author", "Ismeretlen")
-        #     date = sec.get("date", "-")
-        #
-        #     self.tree.insert(mk, "end", text="\u25B6",
-        #     values=(sec_id, title, desc, author, date))
-
-        # self.tree2.grid(row=0, column = 0, sticky='N'+'W'+'S'+'E',
-        # padx = (5, 2.5), pady = (2.5, 5))
+        for m in self.results:
+            self.downframe.grid_columnconfigure(c, weight=1, minsize=40)
+            self.stock_pattern = Stock_pattern(master=self.downframe, elements=m)
+            self.stock_pattern.grid(row=0, column = c, sticky='NSW', padx=(5, 0))
+            c += 1
 
 
     def help(self):

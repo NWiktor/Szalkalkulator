@@ -5,4 +5,4 @@ python main_prog.py
 
 rem cd dist
 rem main_prog.exe
-rem PAUSE
+PAUSE
