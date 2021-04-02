@@ -32,46 +32,45 @@ class Stock_pattern(tk.Canvas):
     global celhossz
 
     def __init__(self, master, max_length = celhossz, elements=[], **kwargs):
-
         self.field_height = 250
         self.cutting_width = 2
         self.text_limit = 400
+        self.pixel_ratio = float(max_length/self.field_height)
 
-        tk.Canvas.__init__(self, master, bg="green", width=40,
+        tk.Canvas.__init__(self, master, bg="chartreuse2", width=40,
         height=self.field_height, **kwargs)
 
         # Calculate relative point of rectangle
-        print(elements)
-
-        p = float(max_length/self.field_height)
-        print(p)
-
         act_length = 0
 
         for k in elements:
-            item_length = int(k/p)
+            item_length = int(k/self.pixel_ratio)
 
             # Item
             self.create_rectangle(0, act_length,
-            42, act_length+item_length-self.cutting_width, fill="gray", width=0)
+            42, act_length+item_length-self.cutting_width,
+            fill="LightSteelBlue3", width=0)
 
             # Item text
             if k >= self.text_limit:
                 self.create_text(20, act_length+(item_length)/2,
-                font="Times 10", text="{0}".format(k))
+                font="Times 8", text="{0}".format(k))
 
             # Cutting width
             self.create_rectangle(0, act_length+item_length-self.cutting_width,
-            42, act_length+item_length, fill="black", width=0)
+            42, act_length+item_length, fill="gray15", width=0)
             act_length += item_length
 
 
 class App():
     def __init__(self, master):
         self.master = master
-        self.master.geometry("600x500+100+100") #Ablak mérete +xpos(v) +ypos(f)
-        self.master.maxsize(600, 500) # Az ablak max. mérete
+        self.master.geometry("600x550+100+100") #Ablak mérete +xpos(v) +ypos(f)
+        self.master.maxsize(600, 550) # Az ablak max. mérete
         self.master.resizable(width=False, height=False)
+
+        self.stock_length = 6000 # mm
+        self.cutting_width = 3 # mm
 
         self.results = []
         self.results = [[1450, 1450, 1450, 1450], [500, 500], [1000, 1000], [200, 400, 800]]
@@ -104,7 +103,7 @@ class App():
 
         self.downframe = tk.Frame(self.master, width=600, height = 200)
         self.downframe.grid(row = 2, column = 0, columnspan=2, sticky="NWS")
-        self.downframe.config(bg="black")
+        # self.downframe.config(bg="black")
         self.downframe.grid_rowconfigure(0, weight=1, minsize=200)
 
         # self.hori_scroll = ttk.Scrollbar(self.master, orient=tk.HORIZONTAL)
@@ -117,19 +116,37 @@ class App():
 
         # Widgets at leftframe:
         n = 0 # Row (line) number
+        self.label1 = ttk.Label(self.leftframe, text="Szálhossz")
+        self.label1.grid(row=n, column=0, sticky = 'W',
+        padx = (5, 2.5), pady=(5, 2.5))
 
+        # self.textbox1 = ttk.Entry(self.leftframe)
+        self.textbox1 = ttk.Entry(self.leftframe)
+        self.textbox1.insert(0, "{0}".format(self.stock_length))
+        self.textbox1.grid(row=n, column=1, sticky = 'WE',
+        padx = 2.5, pady=(5, 2.5))
 
+        n += 1
+        self.label2 = ttk.Label(self.leftframe, text="Fűrészlap vastagság")
+        self.label2.grid(row=n, column=0, sticky = 'W',
+        padx = (5, 2.5), pady=(5, 2.5))
+
+        # self.textbox1 = ttk.Entry(self.leftframe)
+        self.textbox2 = ttk.Entry(self.leftframe)
+        self.textbox2.insert(0, "{0}".format(self.cutting_width))
+        self.textbox2.grid(row=n, column=1, sticky = 'WE',
+        padx = 2.5, pady=(5, 2.5))
 
         n += 1
         self.help_button = ttk.Button(self.leftframe, text="Segítség",
         command=self.help)
         self.help_button.grid(row=n, column=0, sticky = 'WE',
-        padx = (5, 2.5), pady=(5, 2.5))
+        padx = (5, 2.5), pady=2.5)
 
         self.close_button = ttk.Button(self.leftframe, text="Kijelentkezés",
         command=self.close_window)
         self.close_button.grid(row=n, column=1, sticky = 'WE',
-        padx = 2.5, pady=(5, 2.5))
+        padx = 2.5, pady=2.5)
 
         n += 1
         self.about = ttk.Label(self.leftframe,
@@ -197,7 +214,13 @@ class App():
         for m in self.results:
             self.downframe.grid_columnconfigure(c, weight=1, minsize=40)
             self.stock_pattern = Stock_pattern(master=self.downframe, elements=m)
-            self.stock_pattern.grid(row=0, column = c, sticky='NSW', padx=(5, 0))
+            self.stock_pattern.grid(row=0, column=c, sticky='NSW', padx=(5, 0))
+
+            multiply = 2
+            self.infolabel1 = ttk.Label(self.downframe,
+            text="x{0}".format(multiply), anchor="center")
+            self.infolabel1.grid(row=1, column=c, sticky='NS', padx=(5, 0))
+
             c += 1
 
 
