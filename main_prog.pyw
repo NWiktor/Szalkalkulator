@@ -208,17 +208,6 @@ class App():
         self.print_button.grid(row=n, column=0, sticky = 'WE',
         padx = (5, 2.5), pady=2.5)
 
-        # self.smth_button = ttk.Button(self.leftframe, text="Something",
-        # command=self.help)
-        # self.smth_button.grid(row=n, column=1, sticky = 'WE',
-        # padx = 2.5, pady=2.5)
-        #
-        # n += 1
-        # self.help_button = ttk.Button(self.leftframe, text="Segítség",
-        # command=self.help)
-        # self.help_button.grid(row=n, column=0, sticky = 'WE',
-        # padx = (5, 2.5), pady=2.5)
-
         self.close_button = ttk.Button(self.leftframe, text="Kijelentkezés",
         command=self.close_window)
         self.close_button.grid(row=n, column=1, sticky = 'WE',
@@ -509,7 +498,6 @@ class App():
         # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
 
         filename = tempfile.mktemp (".txt")
-        # open (filename, "w").write ("This is a test")
 
         with open(filename, "w") as file:
             file.writelines(self.print_data)
