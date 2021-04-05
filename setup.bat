@@ -1,3 +1,7 @@
 ECHO OFF
 chcp 65001
-pyinstaller --onefile main_prog.py
+cls
+
+pyinstaller --distpath ./ ^
+--onefile main_prog.pyw ^
+--specpath .\build\spec
