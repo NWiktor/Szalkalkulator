@@ -90,13 +90,13 @@ class App():
         # Widgets at master:
         self.leftframe = tk.Frame(self.master, width=300, height = 300)
         self.leftframe.grid(row=0, column=0, sticky="NWES")
-        self.leftframe.config(bg="blue")
+        # self.leftframe.config(bg="blue")
         self.leftframe.grid_columnconfigure(0, weight=1, minsize=150)
         self.leftframe.grid_columnconfigure(1, weight=1, minsize=150)
 
         self.rightframe = tk.Frame(self.master, width=300, height = 300)
         self.rightframe.grid(row=0, column=1, sticky="NWES")
-        self.rightframe.config(bg="red")
+        # self.rightframe.config(bg="red")
         self.rightframe.grid_columnconfigure(0, weight=1, minsize=275)
         self.rightframe.grid_columnconfigure(1, weight=1, minsize=25)
 
@@ -106,7 +106,7 @@ class App():
 
         self.downframe = tk.Frame(self.master, width=600, height = 200)
         self.downframe.grid(row = 2, column = 0, columnspan=2, sticky="NWS")
-        self.downframe.config(bg="black")
+        # self.downframe.config(bg="black")
         self.downframe.grid_rowconfigure(0, weight=1, minsize=200)
 
         self.canvas_widgets = []
