@@ -23,18 +23,13 @@ from tkinter import ttk
 import tkinter as tk
 
 release_date = "2021-04-21"
-celhossz = 6000 # Elérendő szálhossz (mm)
-fureszlap_vast = 2 # Fűrészlap vastagsága (mm)
-szalak = []  # 2D tömb, benne a szálhosszakkal
-szalanyag_nev = "" ## Szálanyag elnevezése (pl.: 20x20x3 acél zártszv.)
 
 
 class Stock_pattern(tk.Canvas):
-    global celhossz
 
-    def __init__(self, master, max_length = celhossz, elements=[], **kwargs):
+    def __init__(self, master, max_length = 6000, elements=[], **kwargs):
         self.field_height = 250
-        self.cutting_width = 2
+        self.cutting_pixel_width = 2
         self.text_limit = 400
         self.pixel_ratio = float(max_length/self.field_height)
 
@@ -49,7 +44,7 @@ class Stock_pattern(tk.Canvas):
 
             # Item
             self.create_rectangle(0, act_length,
-            42, act_length+item_length-self.cutting_width,
+            42, act_length+item_length-self.cutting_pixel_width,
             fill="LightSteelBlue3", width=0)
 
             # Item text
@@ -58,7 +53,7 @@ class Stock_pattern(tk.Canvas):
                 font="Times 8", text="{0}".format(k))
 
             # Cutting width
-            self.create_rectangle(0, act_length+item_length-self.cutting_width,
+            self.create_rectangle(0, act_length+item_length-self.cutting_pixel_width,
             42, act_length+item_length, fill="gray15", width=0)
             act_length += item_length
 
@@ -74,11 +69,14 @@ class App():
         self.cutting_width = 3 # mm
 
         self.stocks = {}
-        self.stocks = {"A" : {"nbr": 2, "len": 2345, "label": "proba"},
-        "B" : {"nbr": 34, "len": 245633, "label": "proba2"}}
+        # self.stocks = {"A" : {"nbr": 2, "len": 4345, "label": "proba"},
+        # "B" : {"nbr": 34, "len": 245633, "label": "proba2"}}
 
-        self.results = []
-        self.results = [[1450, 1450, 1450, 1450], [500, 500], [1000, 1000], [200, 400, 800]]
+        self.results = {}
+        # self.results = {"A": {"nbr": 3, "pattern": [1450, 1450, 1450, 1450]},
+        # "B": {"nbr": 1, "pattern": [500, 500, 1450, 950]},
+        # "C": {"nbr": 2, "pattern": [780, 657, 345, 880]},
+        # "D": {"nbr": 6, "pattern": [1045, 650, 890]}}
 
         self.init_window() # Inicializáló fv. meghívása
 
@@ -108,8 +106,10 @@ class App():
 
         self.downframe = tk.Frame(self.master, width=600, height = 200)
         self.downframe.grid(row = 2, column = 0, columnspan=2, sticky="NWS")
-        # self.downframe.config(bg="black")
+        self.downframe.config(bg="black")
         self.downframe.grid_rowconfigure(0, weight=1, minsize=200)
+
+        self.canvas_widgets = []
 
         # self.hori_scroll = ttk.Scrollbar(self.master, orient=tk.HORIZONTAL)
         # self.hori_scroll.grid(row = 3, columnspan = 2, sticky= 'WE',
@@ -225,7 +225,6 @@ class App():
 
 
     def update(self):
-
         #Tree 1
         self.tree = ttk.Treeview(self.rightframe, height = 10,
         yscrollcommand = self.vert_scroll.set, selectmode="browse")
@@ -247,21 +246,28 @@ class App():
         for p in self.stocks.keys():
             index = i*10
             self.tree.insert("", "end", iid = p, text=index,
-            values=(self.stocks[p]["nbr"], self.stocks[p]["len"], self.stocks[p]["label"]))
+            values=(self.stocks[p]["nbr"], self.stocks[p]["len"],
+            self.stocks[p]["label"]))
             self.tree.item(p, open=True)
             i += 1
 
         self.tree.grid(row=0, column = 0, sticky='WE',
         padx = 2.5, pady = (5, 2.5))
 
+
         # Display patterns
+        for widget in self.downframe.winfo_children():
+            widget.destroy()
+
         c = 0
-        for m in self.results:
+        for m in self.results.keys():
             self.downframe.grid_columnconfigure(c, weight=1, minsize=40)
-            self.stock_pattern = Stock_pattern(master=self.downframe, elements=m)
+            # print(m["pattern"])
+            self.stock_pattern = Stock_pattern(master=self.downframe,
+            elements=self.results[m]["pattern"], max_length=self.stock_length)
             self.stock_pattern.grid(row=0, column=c, sticky='NSW', padx=(5, 0))
 
-            multiply = 2
+            multiply = self.results[m]["nbr"]
             self.infolabel1 = ttk.Label(self.downframe,
             text="x{0}".format(multiply), anchor="center")
             self.infolabel1.grid(row=1, column=c, sticky='NS', padx=(5, 0))
@@ -275,25 +281,43 @@ class App():
 
 
     def update_field(self, event=None):
-        print("focus_out")
+        """ Regenerate tables and calculates cutting patterns
+        dynamcially when focusing out of entry field.
+        """
+
         self.stock_length = int(self.textbox1.get())
         self.cutting_width = int(self.textbox2.get())
-
-        print(self.stock_length)
-        print(self.cutting_width)
 
         self.update()
         self.calculate()
 
 
     def add_item(self):
-        print("Add item")
+        """ Add item to stock list """
 
         uuid_str = str(uuid.uuid4())
-        label = str(self.textbox3.get())
-        nbr = int(self.textbox4.get())
-        len = int(self.textbox5.get())
+        label = str(self.textbox3.get()) # Címke, bármit elfogadunk
 
+        # Mennyiség, ha nincs vagy ha üres, akkor default = 1
+        if (self.textbox4.get() == None) or (self.textbox4.get() == ""):
+            nbr = 1
+        else:
+            nbr = int(self.textbox4.get())
+
+        # Ha nincs hossz, akkor értelmetlen
+        if (self.textbox5.get() == None) or (self.textbox5.get() == ""):
+            print("Hiányzó hossz!")
+            return
+
+        else:
+            try:
+                len = int(self.textbox5.get())
+
+            except Exception as e:
+                print("Váratlan hiba: {0}".format(e))
+                return
+
+        # Ha a hossz túl nagy
         if len > self.stock_length:
             print("Szál túl hosszú!")
             pass
@@ -306,14 +330,13 @@ class App():
 
 
     def delete_item(self):
-        print("Delete item")
+        """ Delete item from list """
 
         ids = []
         sections = []
         sel = self.tree.selection() # Kiválasztott 'item'-ek listája
 
         for s in sel: # Kiválasztott elemeken végigiterálok
-            # print(s)
             if s in self.stocks:
                 del self.stocks[s]
 
@@ -321,14 +344,143 @@ class App():
         self.calculate()
 
 
-    del oversized_item(self):
-        print("Túl hosszú elem törlése")
-        pass
+    def oversized_item(self):
+        """ Delete oversized items """
+
+        del_list = []
+
+        for k in self.stocks.keys():
+            akt_hossz = self.stocks[k]["len"]
+            if int(akt_hossz) > self.stock_length:
+                print("Szálhosszat meghaladó elem törölve: {0}".format(akt_hossz))
+                del_list.append(k)
+
+        for d in del_list:
+            del self.stocks[d]
 
 
     def calculate(self):
-        print("Calculate")
+        """ Calculate cutting patterns """
+
+        szalak = []
+        teljes_hossz = 0
+        hulladek_hossz = 0
+        hulladek_szazalek = 0
+        eredmeny = [] # eredmény gyűjtő tömb
+        hulladek = [] #hulladek gyüjtő tömb
+        self.results = {} # Eredmény tömb törlése
+
+        self.oversized_item() # Hosszú elemek törlése
+
+        # Elemek hozzáadása a tömbhöz
+        for k in self.stocks.keys():
+            length = int(self.stocks[k]["len"])
+            nbr = int(self.stocks[k]["nbr"])
+            stock_array = [length] * nbr
+            szalak += stock_array
+
+        szalak.sort(reverse=True) # csökkenő sorrendbe teszem a szálakat
+
+        while szalak != []: # Amíg a szálak tömb nem nulla, fut a számítás
+            pattern = {}
+            actual_stock = []
+            akt_szal = "|" # akutális szál összetétele / string formátumban
+            akt_hossz = 0 # aktuális szál szálhossza
+            maradek = self.stock_length ## aktuális szál maradéka
+            torolni = []
+
+            for i in range(0, len(szalak)): # Végigmegyek a szálak tömb minden elemén
+                if szalak[i] <= maradek: # Ha az aktuális száldarab rövidebb v egyenlő, mint a maradék
+                    akt_hossz += (szalak[i] + self.cutting_width)  # Aktuális szálhosszhoz hozzáadom az elemet
+                    maradek -= (szalak[i] + self.cutting_width) # Maradékból kivonom az elemet
+                    akt_szal += "| {0:>4} ".format(szalak[i]) # A szál összetételhez hozzáadom az elemet
+
+                    actual_stock.append(szalak[i])
+                    torolni.append(i) # torlendő elemek index listájához hozzáadni az aktuálisat
+
+                else: # Ha az aktuális száldarab hosszabb, mint a maradék
+                    if maradek < szalak[-1]: # Ha a maradék kisebb, mint az utolsó (legrövidebb elem), akkor kilépek
+                        break # For ciklus megtörése, kilépés a while ciklusba
+
+            # Ha kész az iteráció összesítem a szálat
+            akt_szal += "|| --> {0} mm".format(akt_hossz)
+
+            # Set pattern
+            uuid_str = str(uuid.uuid4())
+            self.results[uuid_str] = {"pattern": actual_stock, "nbr" : 1}
+            eredmeny.append(akt_szal)
+
+            if maradek > 0: # Ha a maradek hossz nagyobb mint nulla, akkor hulladek
+                hulladek.append(maradek)
+                hulladek_hossz += maradek
+
+            torolni.sort(reverse=True) # torlendo indexek csökkenő sorrendbe állítása ( ez kell? )
+
+            for k in range(0, len(torolni)): #felhasznált darabok törlése a tömbből
+                szalak.pop(torolni[k])
+
+        # Hulladék százalék kalkuláció
+        teljes_hossz = len(eredmeny) * self.stock_length
+
+        try: # Ha nem viszek be adatot, akkor nullával osztás következik.
+            hulladek_szazalek = float(hulladek_hossz) / float(teljes_hossz) * 100
+
+        except ZeroDivisionError:
+            return
+
+        # Check for same patterns
+        self.check_for_multiple_patterns()
+
+        # Ha készen vagyok, kiadom az eredményt
+        print("\n" + "\n-- DARABOLÁSI TERV --")
+        for p in range(0, len(eredmeny)):
+            print(eredmeny[p]) # Eredmeny kiírása
+
+        print("\n-- ÖSSZEGZÉS --")
+        print("Szükséges szálmennyiség: {0} db ({1} mm)".format(len(eredmeny), self.stock_length))
+        print("Hulladék mennyisége:     {0:.2f} % ({1} mm)".format(hulladek_szazalek, hulladek_hossz))
+        print("Hulladékok: " + str(hulladek)) # Hulladek darabok
+
+        # Képernyő frissítése
         self.update()
+
+
+    def check_for_multiple_patterns(self):
+        """ Merge cutting patterns """
+
+        last_nbr = 0
+        last_pattern = None
+        last_uuid = None
+        del_uuid = []
+
+        for k in self.results.keys():
+            # Ha az első vizsgálat, feltöltöm az adatokat
+            if last_pattern == None:
+                last_pattern = self.results[k]["pattern"]
+                last_nbr = int(self.results[k]["nbr"])
+                last_uuid = k
+
+            # Ha már van adat a last_patternben
+            else:
+                a = last_pattern
+                b = self.results[k]["pattern"]
+
+                # Ha az aktuális pattern egyezik az előzővel
+                if a == b:
+                    # Aktuális pattern nbr emelése
+                    self.results[k]["nbr"] = last_nbr + 1
+
+                    # Előző item hozzáadása a törlési tömbhöz
+                    del_uuid.append(last_uuid)
+
+                # Végül frissítem a last_adatokat
+                last_pattern = self.results[k]["pattern"]
+                last_nbr = int(self.results[k]["nbr"])
+                last_uuid = k
+
+        for d in del_uuid:
+            print("Item törlése: {0}".format(d))
+            del self.results[d]
 
 
     def help(self):
@@ -337,11 +489,9 @@ class App():
 
     def close_window(self):
         self.master.destroy()
-        print("EXIT")
 
 
-
-# Obsolete funcs to be refactored
+# TODO: REFACTOR !!
 def help_info():
     print("\n-- INFO --")
     print("A szálanyagok alaphosszúsága: {0} mm".format(celhossz))
@@ -354,221 +504,16 @@ def help_info():
     print("A kilépéshez nyomd meg az 'e' karaktert.")
 
 
-def mod_fureszlap(): # Fűrészlap módosítása
-    global fureszlap_vast
-
-    try: #Input konvertálása integerré
-        fureszlap_vast = int(key_input("\nA fűrészlap új vastagsága: "))
-
-    except:
-        print("Hibás adatbevitel! A fűrészlap vastagsága nem változott: {0} mm".format(fureszlap_vast))
-        return
-
-    print("A fűrészlap vastagság sikeresen megváltoztatva!")
-
-
-def key_input(string):
-    ki = input(string)
-
-    if ki == "e":
-        raise Escape()
-    elif ki == "i":
-        help_info()
-    elif ki == "m":
-        mod_celhossz()
-    elif ki == "f":
-        mod_fureszlap()
-    elif ki == "x":
-        tulhossz_torles() # Biztonság kedvéért
-        if szalak == []:
-            print("Nem adtál hozzá vágandó szálat!")
-        else:
-            kalk()
-            inputs()
-    else:
-        return ki
-
-
-def inputs():
-    global szalanyag_nev
-    input_list = []
-
-    while True: # Száltípus elnevezése
-        try:
-            szalanyag_nev = key_input("\nAdd meg a vágandó szál nevét: ")
-            if szalanyag_nev == None:
-                continue
-
-            break
-
-        except ValueError:
-            print("Nem megfelelő elnevezés!")
-
-    print("Szálanyag: {0}".format(szalanyag_nev))
-
-    while True: # Vágandó szálak hozzáadása
-        try:
-            data = key_input("\nAdd meg a vágandó szál hosszát és a mennyiségét: ")
-            if data == None:
-                continue
-            else:
-                input_list = data.split(",")
-
-            hossz = int(input_list[0])
-
-            try:
-                menny = int(input_list[1])
-
-            except IndexError:
-                menny = 1
-                print("Hiányos adatbevitel! A mennyiség beállítva: 1 db!")
-
-            except ValueError:
-                print("Mennyiségi érték hiba! Kérlek számértéket adj meg!")
-
-            add_szal(hossz, menny)
-
-        except ValueError:
-            print("Szálhossz érték hiba! Kérlek számértéket adj meg!")
-
-
-def tulhossz_torles(): ## Célhossznál nagyobb elemek utúlagos törlése - ha a hosszú elem korábban lett a listához adva
-    if szalak == []: return
-    torolt_hossz = []
-
-    szalak.sort(reverse=True) # Szalak forditott sorrendbe állitasa
-    while szalak != []:
-        if szalak[0] > celhossz: # Ha az első elem hosszabb mint a célhossz
-            torolt_hossz.append(szalak[0]) # A törlendő elemet hozzáadjuk a listához
-            szalak.pop(0) # Az első elemet kivesszük a listából
-        else:
-            break
-
-    if torolt_hossz != []:
-        print("A célhossznál hosszabb elemek {0} törölve a listából!".format(torolt_hossz))
-
-
-def mod_celhossz(): # Célhossz módosítása
-    global celhossz
-
-    try: #Input konvertálása integerré
-        celhossz = int(key_input("\nA szálhossz új alapértéke: "))
-
-    except:
-        print("Hibás adatbevitel! A szálhossz értéke nem változott: {0} mm".format(celhossz))
-        return
-
-    print("A szálhossz alapérték sikeresen megváltoztatva!")
-    tulhossz_torles()
-
-
-def add_szal(szalhossz, menny): # szálanyag hozzáadása a tömbhöz
-    if szalhossz > celhossz:
-        print("Hibás adatbevitel: túl nagy szálhossz!")
-
-    else:
-        for i in range (0, menny): szalak.append(szalhossz)
-        print("{0} db, {1} mm szálanyag hozzáadva a listához!".format(menny, szalhossz))
-
-
-def kalk():
-    szalak.sort(reverse=True) # csökkenő sorrendbe teszem a szálakat
-    teljes_hossz = 0
-    hulladek_hossz = 0
-    hulladek_szazalek = 0
-    eredmeny = [] # eredmény gyűjtő tömb
-    hulladek = [] #hulladek gyüjtő tömb
-
-    while szalak != []: # Amíg a szálak tömb nem nulla, fut a számítás
-        akt_szal = "|" # akutális szál összetétele / string formátumban
-        akt_hossz = 0 # aktuális szál szálhossza
-        maradek = celhossz ## aktuális szál maradéka
-        torolni = []
-
-        for i in range(0, len(szalak)): # Végigmegyek a szálak tömb minden elemén
-            if szalak[i] <= maradek: # Ha az aktuális száldarab rövidebb v egyenlő, mint a maradék
-                akt_hossz += (szalak[i] + fureszlap_vast)  # Aktuális szálhosszhoz hozzáadom az elemet
-                maradek -= (szalak[i] + fureszlap_vast) # Maradékból kivonom az elemet
-                akt_szal += "| {0:>4} ".format(szalak[i]) # A szál összetételhez hozzáadom az elemet
-                torolni.append(i) # torlendő elemek index listájához hozzáadni az aktuálisat
-
-            else: # Ha az aktuális száldarab hosszabb, mint a maradék
-                if maradek < szalak[-1]: # Ha a maradék kisebb, mint az utolsó (legrövidebb elem), akkor kilépek
-                    break # For ciklus megtörése, kilépés a while ciklusba
-
-        # Ha kész az iteráció összesítem a szálat
-        akt_szal += "|| --> {0} mm".format(akt_hossz)
-        eredmeny.append(akt_szal)
-
-        if maradek > 0: # Ha a maradek hossz nagyobb mint nulla, akkor hulladek
-            hulladek.append(maradek)
-            hulladek_hossz += maradek
-
-        torolni.sort(reverse=True) # torlendo indexek csökkenő sorrendbe állítása ( ez kell? )
-
-        for k in range(0, len(torolni)): #felhasznált darabok törlése a tömbből
-            szalak.pop(torolni[k])
-
-    # Hulladék százalék kalkuláció
-    teljes_hossz = len(eredmeny) * celhossz
-
-    try: # Ha nem viszek be adatot, akkor nullával osztás következik.
-        hulladek_szazalek = float(hulladek_hossz) / float(teljes_hossz) * 100
-
-    except ZeroDivisionError:
-        return
-
-    # Ha készen vagyok, kiadom az eredményt
-    print("\n" + "\n-- DARABOLÁSI TERV -- {0} --".format(szalanyag_nev))
-    for p in range(0, len(eredmeny)):
-        print(eredmeny[p]) # Eredmeny kiírása
-
-    print("\n-- ÖSSZEGZÉS -- {0} --".format(szalanyag_nev))
-    print("Szükséges szálmennyiség: {0} db ({1} mm)".format(len(eredmeny), celhossz))
-    print("Hulladék mennyisége:     {0:.2f} % ({1} mm)".format(hulladek_szazalek, hulladek_hossz))
-    print("Hulladékok: " + str(hulladek)) # Hulladek darabok
-
-
 def credits():
     print("\nSzalkalkulátor V1.2")
     print("Wetzl Viktor - 2020-01-11 - (C) Minden jog fenntartva!")
-
-
-class Escape(Exception):
-    def __init__(self):
-        self.value = "Kilépés a programból!"
-    def __str__(self):
-        return repr(self.value)
-
-
-
 
 
 ### Fő program
 if __name__ == '__main__':
     root = tk.Tk()
     app = App(root)
-    # root.wm_protocol('WM_DELETE_WINDOW', app.close_window) # 'X' gomb felülírása
     root.mainloop()
 
+    credits()
     sys.exit()
-
-
-
-
-    # print("\nHello!")
-    # help_info() ## Alap parancsok kiírása
-    #
-    # try: # Amíg ki nem lépek Escape exceptionnel, addig ismétli
-    #     # a kalkulációt/kiértékelést az inputs fv.-en belüli loop miatt
-    #     inputs()
-    #
-    # except Escape as e:
-    #     print(e.value)
-    #
-    # except KeyboardInterrupt:
-    #     print("\nKilépés a programból!")
-    #
-    # credits()
-    # input("Kilépéshez nyomj 'Enter'-t!")
-    # sys.exit()
