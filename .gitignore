@@ -1,0 +1,6 @@
+# Ignore temp files from converting to .exe
+/__pycache__/
+/build/
+
+# Ignore developer folder (output for debug files, etc.)
+/dev/
