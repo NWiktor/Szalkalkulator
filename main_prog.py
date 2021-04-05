@@ -482,6 +482,10 @@ class App():
             print("Item törlése: {0}".format(d))
             del self.results[d]
 
+    def print_results(self):
+        # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
+        pass
+
 
     def help(self):
         help_info()
