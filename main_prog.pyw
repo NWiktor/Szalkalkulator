@@ -8,6 +8,8 @@ Ez a program adott szálanyagok vágási sorrendjének meghatározására szolg�
 
 ---- Libs ----
 * Tkinter
+* win32api
+* win32print
 
 ---- Help ----
 
@@ -19,6 +21,11 @@ tulajdonjog hatálya alá eső felhasználások esetén is.
 
 import uuid
 import sys
+
+import tempfile
+import win32api
+import win32print
+
 from tkinter import ttk
 import tkinter as tk
 
@@ -78,6 +85,8 @@ class App():
         # "C": {"nbr": 2, "pattern": [780, 657, 345, 880]},
         # "D": {"nbr": 6, "pattern": [1045, 650, 890]}}
 
+        self.print_data = []
+
         self.init_window() # Inicializáló fv. meghívása
 
 
@@ -108,8 +117,6 @@ class App():
         self.downframe.grid(row = 2, column = 0, columnspan=2, sticky="NWS")
         # self.downframe.config(bg="black")
         self.downframe.grid_rowconfigure(0, weight=1, minsize=200)
-
-        self.canvas_widgets = []
 
         # self.hori_scroll = ttk.Scrollbar(self.master, orient=tk.HORIZONTAL)
         # self.hori_scroll.grid(row = 3, columnspan = 2, sticky= 'WE',
@@ -196,10 +203,21 @@ class App():
         pady=5, padx=(5, 2.5))
 
         n += 1
-        self.help_button = ttk.Button(self.leftframe, text="Segítség",
-        command=self.help)
-        self.help_button.grid(row=n, column=0, sticky = 'WE',
+        self.print_button = ttk.Button(self.leftframe, text="Print",
+        command=self.print_results)
+        self.print_button.grid(row=n, column=0, sticky = 'WE',
         padx = (5, 2.5), pady=2.5)
+
+        # self.smth_button = ttk.Button(self.leftframe, text="Something",
+        # command=self.help)
+        # self.smth_button.grid(row=n, column=1, sticky = 'WE',
+        # padx = 2.5, pady=2.5)
+        #
+        # n += 1
+        # self.help_button = ttk.Button(self.leftframe, text="Segítség",
+        # command=self.help)
+        # self.help_button.grid(row=n, column=0, sticky = 'WE',
+        # padx = (5, 2.5), pady=2.5)
 
         self.close_button = ttk.Button(self.leftframe, text="Kijelentkezés",
         command=self.close_window)
@@ -262,7 +280,6 @@ class App():
         c = 0
         for m in self.results.keys():
             self.downframe.grid_columnconfigure(c, weight=1, minsize=40)
-            # print(m["pattern"])
             self.stock_pattern = Stock_pattern(master=self.downframe,
             elements=self.results[m]["pattern"], max_length=self.stock_length)
             self.stock_pattern.grid(row=0, column=c, sticky='NSW', padx=(5, 0))
@@ -432,14 +449,18 @@ class App():
         self.check_for_multiple_patterns()
 
         # Ha készen vagyok, kiadom az eredményt
-        print("\n" + "\n-- DARABOLÁSI TERV --")
-        for p in range(0, len(eredmeny)):
-            print(eredmeny[p]) # Eredmeny kiírása
+        self.print_data.clear()
 
-        print("\n-- ÖSSZEGZÉS --")
-        print("Szükséges szálmennyiség: {0} db ({1} mm)".format(len(eredmeny), self.stock_length))
-        print("Hulladék mennyisége:     {0:.2f} % ({1} mm)".format(hulladek_szazalek, hulladek_hossz))
-        print("Hulladékok: " + str(hulladek)) # Hulladek darabok
+        self.print_data.append("\n-- DARABOLÁSI TERV --")
+        for p in range(0, len(eredmeny)):
+            self.print_data.append("\n{0}".format(eredmeny[p])) # Eredmeny kiírása
+
+        self.print_data.append("\n\n-- ÖSSZEGZÉS --")
+        self.print_data.append("\nSzükséges szálmennyiség: "
+        +"{0} db ({1} mm)".format(len(eredmeny), self.stock_length))
+        self.print_data.append("\nHulladék mennyisége: "
+        +"{0:.2f}% ({1} mm)".format(hulladek_szazalek, hulladek_hossz))
+        self.print_data.append("\nHulladékok: " + str(hulladek)) # Hulladek darabok
 
         # Képernyő frissítése
         self.update()
@@ -482,9 +503,29 @@ class App():
             print("Item törlése: {0}".format(d))
             del self.results[d]
 
+
     def print_results(self):
+        """ Print results by default printer. """
         # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
-        pass
+
+        filename = tempfile.mktemp (".txt")
+        # open (filename, "w").write ("This is a test")
+
+        with open(filename, "w") as file:
+            file.writelines(self.print_data)
+
+        win32api.ShellExecute (
+            0,
+            "print",
+            filename,
+            #
+            # If this is None, the default printer will
+            # be used anyway.
+            #
+            '/d:"%s"' % win32print.GetDefaultPrinter (),
+            ".",
+            0
+            )
 
 
     def help(self):
@@ -493,19 +534,6 @@ class App():
 
     def close_window(self):
         self.master.destroy()
-
-
-# TODO: REFACTOR !!
-def help_info():
-    print("\n-- INFO --")
-    print("A szálanyagok alaphosszúsága: {0} mm".format(celhossz))
-    print("A fűrészlap vastagság: {0} mm".format(fureszlap_vast))
-    print("Add meg a szálhosszat és a mennyiséget vesszővel elválasztva (pl.: 1300,4)")
-    print("Az adatbevitel befejezéséhez és az összegzéshez írj be egy 'x' karaktert.")
-    print("A szálhossz alapértékének módosításához írj be egy 'm' karaktert.")
-    print("A fűrészlap vastagság módosításához írj be egy 'f' karaktert.")
-    print("A help ismételt előhívásához nyomd meg az 'i' karaktert.")
-    print("A kilépéshez nyomd meg az 'e' karaktert.")
 
 
 def credits():
