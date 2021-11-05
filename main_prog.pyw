@@ -118,9 +118,9 @@ class App():
         # self.downframe.config(bg="black")
         self.downframe.grid_rowconfigure(0, weight=1, minsize=200)
 
-        # self.hori_scroll = ttk.Scrollbar(self.master, orient=tk.HORIZONTAL)
-        # self.hori_scroll.grid(row = 3, columnspan = 2, sticky= 'WE',
-        # padx = 5, pady=(2.5, 5))
+        self.hori_scroll = ttk.Scrollbar(self.downframe, orient=tk.HORIZONTAL)
+        self.hori_scroll.grid(row = 3, columnspan = 2, sticky= 'WE',
+        padx = 5, pady=(2.5, 5))
 
         style = ttk.Style()
         # style.theme_use('xpnative')
@@ -134,7 +134,7 @@ class App():
 
         self.textbox1 = ttk.Entry(self.leftframe)
         self.textbox1.insert(0, "{0}".format(self.stock_length))
-        self.textbox1.bind("<Button-1>", self.clear_field)
+        # self.textbox1.bind("<Button-1>", self.clear_field)
         self.textbox1.bind("<FocusOut>", self.update_field)
         self.textbox1.grid(row=n, column=1, sticky = 'WE',
         padx = 2.5, pady=(5, 2.5))
@@ -146,7 +146,7 @@ class App():
 
         self.textbox2 = ttk.Entry(self.leftframe)
         self.textbox2.insert(0, "{0}".format(self.cutting_width))
-        self.textbox2.bind("<Button-1>", self.clear_field)
+        # self.textbox2.bind("<Button-1>", self.clear_field)
         self.textbox2.bind("<FocusOut>", self.update_field)
         self.textbox2.grid(row=n, column=1, sticky = 'WE',
         padx = 2.5, pady=(5, 2.5))
@@ -235,7 +235,7 @@ class App():
         #Tree 1
         self.tree = ttk.Treeview(self.rightframe, height = 10,
         yscrollcommand = self.vert_scroll.set, selectmode="browse")
-        self.vert_scroll.config(command=self.tree.yview)
+        self.vert_scroll.configure(command=self.tree.yview)
 
         self.tree["columns"]=("1", "2", "3")
         self.tree.column("#0", width=40, minwidth=40, stretch="False")
@@ -280,10 +280,10 @@ class App():
             c += 1
 
 
-    def clear_field(self, event=None):
-        print("clear_field")
-        # self.textbox1.delete(0, tk.END)
-        pass
+    # def clear_field(self, event=None):
+    #     print("clear_field")
+    #     # self.textbox1.delete(0, tk.END)
+    #     pass
 
 
     def update_field(self, event=None):
@@ -496,6 +496,7 @@ class App():
     def print_results(self):
         """ Print results by default printer. """
         # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
+        # https://stackoverflow.com/questions/2878616/programmatically-print-a-pdf-file-specifying-printer
 
         filename = tempfile.mktemp (".txt")
 
