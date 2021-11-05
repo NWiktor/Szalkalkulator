@@ -68,8 +68,8 @@ class Stock_pattern(tk.Canvas):
 class App():
     def __init__(self, master):
         self.master = master
-        self.master.geometry("600x550+100+100") #Ablak mérete +xpos(v) +ypos(f)
-        self.master.maxsize(600, 550) # Az ablak max. mérete
+        self.master.geometry("600x565+100+100") #Ablak mérete +xpos(v) +ypos(f)
+        self.master.maxsize(600, 565) # Az ablak max. mérete
         self.master.resizable(width=False, height=False)
 
         self.stock_length = 6000 # mm
@@ -113,14 +113,25 @@ class App():
         self.separator.grid(row = 1, columnspan = 2, sticky = 'WE',
         pady=5, padx=5)
 
-        self.downframe = tk.Frame(self.master, width=600, height = 200)
-        self.downframe.grid(row = 2, column = 0, columnspan=2, sticky="NWS")
+        self.downframe = tk.Frame(self.master, width=600, height=200)
+        self.downframe.grid(row = 2, column = 0, columnspan=2, sticky="NWSE")
         # self.downframe.config(bg="black")
         self.downframe.grid_rowconfigure(0, weight=1, minsize=200)
+        self.downframe.grid_rowconfigure(1, weight=1, minsize=16)
+        self.downframe.grid_columnconfigure(0, weight=1, minsize=570)
 
-        self.hori_scroll = ttk.Scrollbar(self.downframe, orient=tk.HORIZONTAL)
-        self.hori_scroll.grid(row = 3, columnspan = 2, sticky= 'WE',
-        padx = 5, pady=(2.5, 5))
+        self.canvas = tk.Canvas(self.downframe, borderwidth=0)
+        self.canvas.grid(row = 0, column = 0, sticky = "NWSE")
+        self.canvasframe = tk.Frame(self.canvas)
+        self.hori_scroll = ttk.Scrollbar(self.downframe, orient=tk.HORIZONTAL,
+        command=self.canvas.xview)
+        self.canvas.configure(xscrollcommand=self.hori_scroll.set)
+        self.hori_scroll.grid(row = 1, column = 0, sticky= 'WE',
+        padx = 5, pady=(5,0))
+
+        self.canvas.create_window((0,0), window=self.canvasframe, anchor="nw",
+        tags="self.frame")
+        self.canvasframe.bind("<Configure>", self.onFrameConfigure)
 
         style = ttk.Style()
         # style.theme_use('xpnative')
@@ -220,15 +231,17 @@ class App():
         self.about.grid(row=n, column=0, columnspan=2, sticky = 'WE',
         pady=5, padx=(5, 2.5))
 
-
         # Widgets at rightframe:
         self.vert_scroll = ttk.Scrollbar(self.rightframe, orient="vertical")
         self.vert_scroll.grid(row = 0, column = 1, sticky='N'+'S',
         padx = (2.5, 5), pady=(5, 2.5))
 
-
         # Dynamic update of contents:
         self.update() # Betölti a treeview-et
+
+
+    def onFrameConfigure(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
 
     def update(self):
@@ -263,18 +276,18 @@ class App():
 
 
         # Display patterns
-        for widget in self.downframe.winfo_children():
+        for widget in self.canvasframe.winfo_children():
             widget.destroy()
 
         c = 0
         for m in self.results.keys():
-            self.downframe.grid_columnconfigure(c, weight=1, minsize=40)
-            self.stock_pattern = Stock_pattern(master=self.downframe,
+            self.canvasframe.grid_columnconfigure(c, weight=1, minsize=40)
+            self.stock_pattern = Stock_pattern(master=self.canvasframe,
             elements=self.results[m]["pattern"], max_length=self.stock_length)
             self.stock_pattern.grid(row=0, column=c, sticky='NSW', padx=(5, 0))
 
             multiply = self.results[m]["nbr"]
-            self.infolabel1 = ttk.Label(self.downframe,
+            self.infolabel1 = ttk.Label(self.canvasframe,
             text="x{0}".format(multiply), anchor="center")
             self.infolabel1.grid(row=1, column=c, sticky='NS', padx=(5, 0))
             c += 1
