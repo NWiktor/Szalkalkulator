@@ -512,6 +512,17 @@ class App():
         # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
         # https://stackoverflow.com/questions/2878616/programmatically-print-a-pdf-file-specifying-printer
 
+        # Generate image
+        import io
+        import subprocess
+        from PIL import Image
+
+        ps = self.canvas.postscript(colormode='color')
+        img = Image.open(io.BytesIO(ps.encode('utf-8')))
+        img.save('/tmp/test.jpg')
+
+        return
+
         filename = tempfile.mktemp (".txt")
 
         with open(filename, "w") as file:
