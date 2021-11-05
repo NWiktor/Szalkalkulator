@@ -12,6 +12,7 @@ Ez a program adott szálanyagok vágási sorrendjének meghatározására szolg�
 * win32print
 
 ---- Help ----
+* https://stackoverflow.com/questions/3085696/adding-a-scrollbar-to-a-group-of-widgets-in-tkinter/3092341#3092341
 
 ---- Info ----
 Wetzl Viktor - 2021.04.01 - Minden jog fenntartva a birtoklásra, felhasználásra,
@@ -246,7 +247,7 @@ class App():
 
     def update(self):
         #Tree 1
-        self.tree = ttk.Treeview(self.rightframe, height = 10,
+        self.tree = ttk.Treeview(self.rightframe, height = 11,
         yscrollcommand = self.vert_scroll.set, selectmode="browse")
         self.vert_scroll.configure(command=self.tree.yview)
 
