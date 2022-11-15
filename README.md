@@ -10,5 +10,6 @@ Any help is appreciated!
 
 Todos:
 - refactor tkinter gui to pyqt
+- english language support
 - add calculated stock images to printed pdf, instead of raw text
 - refine existing gui elements and add new (statusbar)
