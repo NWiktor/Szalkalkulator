@@ -23,6 +23,7 @@ Wetzl Viktor - 2021.04.01 - All rights reserved
 import uuid
 import sys
 
+from fpdf import FPDF
 import tempfile
 import win32api
 import win32print
@@ -36,18 +37,94 @@ import tkinter as tk
 from PyQt5.QtWidgets import (QApplication, QWidget, QMenu, QMainWindow,
 QAction, QDockWidget, QListWidget, QGridLayout, QVBoxLayout, QHBoxLayout,
 QTreeView, QDesktopWidget, QPushButton, QMessageBox, QFormLayout, QLineEdit,
-QTreeWidgetItem, QTreeWidget)
-from PyQt5.QtGui import QStandardItemModel
-from PyQt5.QtCore import Qt
+QTreeWidgetItem, QTreeWidget, QSizePolicy)
+from PyQt5.QtGui import (QStandardItemModel, QPainter, QBrush, QColor, QFontMetrics)
+from PyQt5.QtCore import (Qt, QRect, QSize)
 
 # Local application imports
 # TODO: Implement log ?
 # from logger import MAIN_LOGGER as l
 
-RELEASE_DATE = "2021-04-21"
+RELEASE_DATE = "2022-11-16"
 
 
 # TODO: Refactor
+class Stock_pattern_item(QWidget):
+
+    def __init__(self, width1, color = 'green', *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.color = color
+        self.width1 = width1
+        print(f"{color=}, {width1=}")
+
+        # Sizepolicy
+        self.setSizePolicy(QSizePolicy.MinimumExpanding,
+        QSizePolicy.MinimumExpanding)
+
+
+    def sizeHint(self):
+        return QSize(int(self.width1/5), 50)
+
+
+    def paintEvent(self, e):
+        painter = QPainter(self)
+        brush = QBrush()
+        brush.setColor(QColor(self.color))
+        brush.setStyle(Qt.SolidPattern)
+        rect = QRect(0, 0, painter.device().width(), painter.device().height())
+        painter.fillRect(rect, brush)
+
+        # Get current state.
+        # dial = self.parent()._text_lower_limit
+
+        pen = painter.pen()
+        pen.setColor(QColor('red'))
+        painter.setPen(pen)
+
+        font = painter.font()
+        font.setFamily('Times')
+        font.setPointSize(18)
+        painter.setFont(font)
+
+        fm = QFontMetrics(painter.font());
+        sx = "{}".format(self.width1)
+
+        x = int(self.width1/5/2)
+        y = 50
+        xoffset = fm.boundingRect(sx).width()/2;
+        yoffset = fm.boundingRect(sx).height()/2;
+        painter.drawText(int(x-xoffset), int(y-yoffset), sx);
+
+        # painter.drawText(rect, )
+        painter.end()
+
+
+class Stock_pattern_widget(QWidget):
+
+    def __init__(self, elements: list, max_length: int = 6000, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Constructor
+        self.elements = elements
+        self.max_length = max_length
+
+        # GUI variables
+        self._height = 1
+        self._width = 1
+        self._text_lower_limit = 400
+        self.pixel_ratio = float(self.max_length / self._height)
+
+        # TODO: add color definitions here:
+        color=['green', 'blue', 'green', 'blue']
+        layout = QHBoxLayout()
+        for i, value in enumerate(self.elements):
+            layout.addWidget(Stock_pattern_item(self.elements[i], color[i]), alignment=Qt.AlignCenter)
+
+        layout.setSpacing(0)
+        layout.addStretch()
+        self.setLayout(layout)
+
+
 class Stock_pattern(tk.Canvas):
 
     def __init__(self, master, max_length = 6000, elements=[], **kwargs):
@@ -114,7 +191,6 @@ class MainWindow(QMainWindow):
 
 
     def _create_central_widget(self):
-
         layout_widget = QWidget()
         layout = QGridLayout()
         data_field = QVBoxLayout()
@@ -129,7 +205,7 @@ class MainWindow(QMainWindow):
         self.fureszlap_input.setText(str(self.cutting_width))
         self.fureszlap_input.setFixedWidth(50)
         input_field.addRow("Fűrészlap vast. (mm)", self.fureszlap_input)
-
+        # TODO: Add separator here
         self.darab_hossz = QLineEdit()
         self.darab_hossz.setPlaceholderText("Pl.: 500")
         self.darab_hossz.setFixedWidth(50)
@@ -158,7 +234,7 @@ class MainWindow(QMainWindow):
 
         # List
         self.stock_table = QTreeWidget(self)
-        # self.stock_table.resize(500,200)
+        self.stock_table.resize(700,200)
         self.stock_table.setColumnCount(4)
         self.stock_table.setHeaderLabels(["Poz.", "Hossz", "Mennyiség", "Címke"])
         self.stock_table.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -166,8 +242,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.stock_table,0,1)
 
         # Add stocks
-        pattern_table = QHBoxLayout()
-        layout.addLayout(pattern_table,1,0)
+        self.pattern_table = QHBoxLayout()
+        self.pattern_table.addWidget(Stock_pattern_widget([250, 500, 700, 890]))
+        self.pattern_table.addWidget(Stock_pattern_widget([250, 400, 300, 690]))
+        layout.addLayout(self.pattern_table,1,0,0,2)
         layout_widget.setLayout(layout)
         self.setCentralWidget(layout_widget)
 
@@ -242,17 +320,18 @@ class MainWindow(QMainWindow):
     #         text="x{0}".format(multiply), anchor="center")
     #         self.infolabel1.grid(row=1, column=c, sticky='NS', padx=(5, 0))
     #         c += 1
-    #
-    #
-    def update_field(self):
-        """ Regenerate tables and calculates cutting patterns
-        dynamcially when focusing out of entry field.
-        """
 
-        self.stock_length = int(self.szalhossz_input.text())
-        self.cutting_width = int(self.fureszlap_input.text())
-        self.update()
-        self.calculate()
+
+    # TODO: This function is needed later!
+    # def update_field(self):
+    #     """ Regenerate tables and calculates cutting patterns
+    #     dynamcially when focusing out of entry field.
+    #     """
+    #
+    #     self.stock_length = int(self.szalhossz_input.text())
+    #     self.cutting_width = int(self.fureszlap_input.text())
+    #     self.update()
+    #     self.calculate()
 
 
     def add_item(self):
@@ -466,6 +545,7 @@ class MainWindow(QMainWindow):
         # https://stackoverflow.com/questions/2878616/programmatically-print-a-pdf-file-specifying-printer
         # https://www.pythonguis.com/examples/python-pdf-report-generator/
         # https://towardsdatascience.com/creating-pdf-files-with-python-ad3ccadfae0f
+        # https://towardsdatascience.com/creating-pdf-files-with-python-ad3ccadfae0f
 
         # Generate pdf
         # TODO: Add code
@@ -529,3 +609,9 @@ if __name__ == '__main__':
     app.exec()
     l.info("Main window open")
     sys.exit()
+
+    # app = QApplication([])
+    # app.setStyle('Fusion')
+    # stock_widget = Stock_pattern_widget([250, 500, 700, 890])
+    # stock_widget.show()
+    # app.exec_()
