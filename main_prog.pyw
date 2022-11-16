@@ -1,24 +1,24 @@
 # -*- coding: utf-8 -*-#
 #!/usr/bin/python3
+"""  GUI for the Szálkalkulátor app.
 
-""" GUI (frontend) a Szálkalkulátor alkalmazáshoz.
+This app is used for determining cutting patterns for stock materials.
 
-Ez a program adott szálanyagok vágási sorrendjének meghatározására szolgál.
-
-
----- Libs ----
+Libs
+----
 * Tkinter
 * win32api
 * win32print
 
----- Help ----
-* https://stackoverflow.com/questions/3085696/adding-a-scrollbar-to-a-group-of-widgets-in-tkinter/3092341#3092341
+Help
+----
+* https://www.w3.org/TR/SVG11/types.html#ColorKeywords
 
----- Info ----
-Wetzl Viktor - 2021.04.01 - Minden jog fenntartva a birtoklásra, felhasználásra,
-sokszorosításra, szerkesztésre, értékesítésre nézve, valamint az ipari
-tulajdonjog hatálya alá eső felhasználások esetén is.
+Info
+----
+Wetzl Viktor - 2021.04.01 - All rights reserved
 """
+# TODO: Add proper licence type
 
 import uuid
 import sys
@@ -30,9 +30,24 @@ import win32print
 from tkinter import ttk
 import tkinter as tk
 
-release_date = "2021-04-21"
+
+# pylint: disable = no-name-in-module
+# Third party imports
+from PyQt5.QtWidgets import (QApplication, QWidget, QMenu, QMainWindow,
+QAction, QDockWidget, QListWidget, QGridLayout, QVBoxLayout, QHBoxLayout,
+QTreeView, QDesktopWidget, QPushButton, QMessageBox, QFormLayout, QLineEdit,
+QTreeWidgetItem, QTreeWidget)
+from PyQt5.QtGui import QStandardItemModel
+from PyQt5.QtCore import Qt
+
+# Local application imports
+# TODO: Implement log ?
+# from logger import MAIN_LOGGER as l
+
+RELEASE_DATE = "2021-04-21"
 
 
+# TODO: Refactor
 class Stock_pattern(tk.Canvas):
 
     def __init__(self, master, max_length = 6000, elements=[], **kwargs):
@@ -66,16 +81,14 @@ class Stock_pattern(tk.Canvas):
             act_length += item_length
 
 
-class App():
-    def __init__(self, master):
-        self.master = master
-        self.master.geometry("600x565+100+100") #Ablak mérete +xpos(v) +ypos(f)
-        self.master.maxsize(600, 565) # Az ablak max. mérete
-        self.master.resizable(width=False, height=False)
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__(parent=None)
+
+        self.setWindowTitle("Stock cutting calculator - ")
 
         self.stock_length = 6000 # mm
         self.cutting_width = 3 # mm
-
         self.stocks = {}
         # self.stocks = {"A" : {"nbr": 2, "len": 4345, "label": "proba"},
         # "B" : {"nbr": 34, "len": 245633, "label": "proba2"}}
@@ -87,158 +100,89 @@ class App():
         # "D": {"nbr": 6, "pattern": [1045, 650, 890]}}
 
         self.print_data = []
+        self._create_menubar()
+        self._create_central_widget()
+        self._create_status_bar()
 
-        self.init_window() # Inicializáló fv. meghívása
+
+    def _create_menubar(self):
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu('File')
 
 
-    # Init_window létrehozása (konstruktor)
-    def init_window(self):
-        global release_date
+    def _create_central_widget(self):
 
-        self.master.title("Szálkalkulátor by W.V.") # Ablak cím beállítása
+        layout_widget = QWidget()
+        layout = QGridLayout()
+        data_field = QVBoxLayout()
+        input_field = QFormLayout()
 
-        # Widgets at master:
-        self.leftframe = tk.Frame(self.master, width=300, height = 300)
-        self.leftframe.grid(row=0, column=0, sticky="NWES")
-        # self.leftframe.config(bg="blue")
-        self.leftframe.grid_columnconfigure(0, weight=1, minsize=150)
-        self.leftframe.grid_columnconfigure(1, weight=1, minsize=150)
+        # Datafields
+        self.szalhossz_input = QLineEdit()
+        self.szalhossz_input.setPlaceholderText(str(self.stock_length))
+        self.szalhossz_input.setFixedWidth(50)
+        input_field.addRow("Szálhossz (mm)", self.szalhossz_input)
+        self.fureszlap_input = QLineEdit()
+        self.fureszlap_input.setPlaceholderText(str(self.cutting_width))
+        self.fureszlap_input.setFixedWidth(50)
+        input_field.addRow("Fűrészlap vast. (mm)", self.fureszlap_input)
 
-        self.rightframe = tk.Frame(self.master, width=300, height = 300)
-        self.rightframe.grid(row=0, column=1, sticky="NWES")
-        # self.rightframe.config(bg="red")
-        self.rightframe.grid_columnconfigure(0, weight=1, minsize=275)
-        self.rightframe.grid_columnconfigure(1, weight=1, minsize=25)
+        self.darab_hossza = QLineEdit()
+        self.darab_hossza.setPlaceholderText("Pl.: 500")
+        self.darab_hossza.setFixedWidth(50)
+        input_field.addRow("Darab hossza (mm)", self.darab_hossza)
+        self.darab_nbr = QLineEdit()
+        self.darab_nbr.setPlaceholderText("Pl.: 2")
+        self.darab_nbr.setFixedWidth(50)
+        input_field.addRow("Darab mennyiség (mm)", self.darab_nbr)
+        self.darab_label = QLineEdit()
+        self.darab_label.setPlaceholderText("Pl.: Part 01")
+        self.darab_label.setFixedWidth(50)
+        input_field.addRow("Darab hossza (mm)", self.darab_label)
+        data_field.addLayout(input_field)
 
-        self.separator = ttk.Separator(self.master, orient=tk.HORIZONTAL)
-        self.separator.grid(row = 1, columnspan = 2, sticky = 'WE',
-        pady=5, padx=5)
+        button_box = QHBoxLayout()
+        # button_box.addStretch()
+        add_button = QPushButton("Hozzáad")
+        add_button.clicked.connect(self.add_item)
+        del_button = QPushButton("Töröl")
+        del_button.clicked.connect(self.delete_item)
+        print_button = QPushButton("Print")
+        print_button.clicked.connect(self.print_results)
+        button_box.addWidget(add_button)
+        button_box.addWidget(del_button)
+        button_box.addWidget(print_button)
+        data_field.addLayout(button_box)
+        layout.addLayout(data_field,0,0)
 
-        self.downframe = tk.Frame(self.master, width=600, height=200)
-        self.downframe.grid(row = 2, column = 0, columnspan=2, sticky="NWSE")
-        # self.downframe.config(bg="black")
-        self.downframe.grid_rowconfigure(0, weight=1, minsize=200)
-        self.downframe.grid_rowconfigure(1, weight=1, minsize=16)
-        self.downframe.grid_columnconfigure(0, weight=1, minsize=570)
+        # List
+        l1 = QTreeWidgetItem(["1", "B", "C", "D"])
+        stock_table = QTreeWidget(self)
+        # stock_table.resize(500,200)
+        stock_table.setColumnCount(4)
+        stock_table.setHeaderLabels(["Poz.", "Hossz", "Mennyiség", "Címke"])
+        stock_table.addTopLevelItem(l1)
+        
+        layout.addWidget(stock_table,0,1)
 
-        self.canvas = tk.Canvas(self.downframe, borderwidth=0)
-        self.canvas.grid(row = 0, column = 0, sticky = "NWSE")
-        self.canvasframe = tk.Frame(self.canvas)
-        self.hori_scroll = ttk.Scrollbar(self.downframe, orient=tk.HORIZONTAL,
-        command=self.canvas.xview)
-        self.canvas.configure(xscrollcommand=self.hori_scroll.set)
-        self.hori_scroll.grid(row = 1, column = 0, sticky= 'WE',
-        padx = 5, pady=(5,0))
+        # Add stocks
+        pattern_table = QHBoxLayout()
+        layout.addLayout(pattern_table,1,0)
+        layout_widget.setLayout(layout)
+        self.setCentralWidget(layout_widget)
 
-        self.canvas.create_window((0,0), window=self.canvasframe, anchor="nw",
-        tags="self.frame")
-        self.canvasframe.bind("<Configure>", self.onFrameConfigure)
 
-        style = ttk.Style()
-        # style.theme_use('xpnative')
-        style.theme_use('vista')
+    def _create_status_bar(self):
+        self.statusbar = self.statusBar()
 
-        # Widgets at leftframe:
-        n = 0 # Row (line) number
-        self.label1 = ttk.Label(self.leftframe, text="Szálhossz")
-        self.label1.grid(row=n, column=0, sticky = 'W',
-        padx = (5, 2.5), pady=(5, 2.5))
 
-        self.textbox1 = ttk.Entry(self.leftframe)
-        self.textbox1.insert(0, "{0}".format(self.stock_length))
-        # self.textbox1.bind("<Button-1>", self.clear_field)
-        self.textbox1.bind("<FocusOut>", self.update_field)
-        self.textbox1.grid(row=n, column=1, sticky = 'WE',
-        padx = 2.5, pady=(5, 2.5))
+    def center(self):
+        """Position window to the center."""
+        qt_rectangle = self.frameGeometry()
+        centerpoint = QDesktopWidget().availableGeometry().center()
+        qt_rectangle.moveCenter(centerpoint)
+        self.move(qt_rectangle.topLeft())
 
-        n += 1
-        self.label2 = ttk.Label(self.leftframe, text="Fűrészlap vastagság")
-        self.label2.grid(row=n, column=0, sticky = 'W',
-        padx = (5, 2.5), pady=(5, 2.5))
-
-        self.textbox2 = ttk.Entry(self.leftframe)
-        self.textbox2.insert(0, "{0}".format(self.cutting_width))
-        # self.textbox2.bind("<Button-1>", self.clear_field)
-        self.textbox2.bind("<FocusOut>", self.update_field)
-        self.textbox2.grid(row=n, column=1, sticky = 'WE',
-        padx = 2.5, pady=(5, 2.5))
-
-        n += 1
-        self.separator = ttk.Separator(self.leftframe, orient=tk.HORIZONTAL)
-        self.separator.grid(row=n, column=0, columnspan=2, sticky='WE',
-        pady=5, padx=(5, 2.5))
-
-        n += 1
-        self.label3 = ttk.Label(self.leftframe, text="Címke")
-        self.label3.grid(row=n, column=0, sticky = 'W',
-        padx = (5, 2.5), pady=(5, 2.5))
-
-        self.textbox3 = ttk.Entry(self.leftframe)
-        self.textbox3.insert(0, "")
-        self.textbox3.grid(row=n, column=1, sticky = 'WE',
-        padx = 2.5, pady=(5, 2.5))
-
-        n += 1
-        self.label4 = ttk.Label(self.leftframe, text="Mennyiség")
-        self.label4.grid(row=n, column=0, sticky = 'W',
-        padx = (5, 2.5), pady=(5, 2.5))
-
-        self.textbox4 = ttk.Entry(self.leftframe)
-        self.textbox4.insert(0, "")
-        self.textbox4.grid(row=n, column=1, sticky = 'WE',
-        padx = 2.5, pady=(5, 2.5))
-
-        n += 1
-        self.label5 = ttk.Label(self.leftframe, text="Hossz")
-        self.label5.grid(row=n, column=0, sticky = 'W',
-        padx = (5, 2.5), pady=(5, 2.5))
-
-        self.textbox5 = ttk.Entry(self.leftframe)
-        self.textbox5.insert(0, "")
-        self.textbox5.grid(row=n, column=1, sticky = 'WE',
-        padx = 2.5, pady=(5, 2.5))
-
-        n += 1
-        self.add_button = ttk.Button(self.leftframe, text="Hozzáad",
-        command=self.add_item)
-        self.add_button.grid(row=n, column=0, sticky = 'WE',
-        padx = (5, 2.5), pady=2.5)
-
-        self.delete_button = ttk.Button(self.leftframe, text="Törlés",
-        command=self.delete_item)
-        self.delete_button.grid(row=n, column=1, sticky = 'WE',
-        padx = 2.5, pady=2.5)
-
-        n += 1
-        self.separator = ttk.Separator(self.leftframe, orient=tk.HORIZONTAL)
-        self.separator.grid(row=n, column=0, columnspan=2, sticky='WE',
-        pady=5, padx=(5, 2.5))
-
-        n += 1
-        self.print_button = ttk.Button(self.leftframe, text="Print",
-        command=self.print_results)
-        self.print_button.grid(row=n, column=0, sticky = 'WE',
-        padx = (5, 2.5), pady=2.5)
-
-        self.close_button = ttk.Button(self.leftframe, text="Kijelentkezés",
-        command=self.close_window)
-        self.close_button.grid(row=n, column=1, sticky = 'WE',
-        padx = 2.5, pady=2.5)
-
-        n += 1
-        self.about = ttk.Label(self.leftframe,
-        text="by Wetzl Viktor - {0}".format(release_date), anchor="center")
-        # self.about.bind("<Button-1>", redirect_to_webpage)
-        self.about.grid(row=n, column=0, columnspan=2, sticky = 'WE',
-        pady=5, padx=(5, 2.5))
-
-        # Widgets at rightframe:
-        self.vert_scroll = ttk.Scrollbar(self.rightframe, orient="vertical")
-        self.vert_scroll.grid(row = 0, column = 1, sticky='N'+'S',
-        padx = (2.5, 5), pady=(5, 2.5))
-
-        # Dynamic update of contents:
-        self.update() # Betölti a treeview-et
 
 
     def onFrameConfigure(self, event):
@@ -292,12 +236,6 @@ class App():
             text="x{0}".format(multiply), anchor="center")
             self.infolabel1.grid(row=1, column=c, sticky='NS', padx=(5, 0))
             c += 1
-
-
-    # def clear_field(self, event=None):
-    #     print("clear_field")
-    #     # self.textbox1.delete(0, tk.END)
-    #     pass
 
 
     def update_field(self, event=None):
@@ -513,15 +451,15 @@ class App():
         # https://stackoverflow.com/questions/2878616/programmatically-print-a-pdf-file-specifying-printer
 
         # Generate image
-        import io
-        import subprocess
-        from PIL import Image
-
-        ps = self.canvas.postscript(colormode='color')
-        img = Image.open(io.BytesIO(ps.encode('utf-8')))
-        img.save('/tmp/test.jpg')
-
-        return
+        # import io
+        # import subprocess
+        # from PIL import Image
+        #
+        # ps = self.canvas.postscript(colormode='color')
+        # img = Image.open(io.BytesIO(ps.encode('utf-8')))
+        # img.save('/tmp/test.jpg')
+        #
+        # return
 
         filename = tempfile.mktemp (".txt")
 
@@ -557,9 +495,14 @@ def credits():
 
 ### Fő program
 if __name__ == '__main__':
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
+    app = QApplication([])
+    app.setStyle('Fusion')
+
+    main = MainWindow()
+    main.show()
+    main.center()
+    app.exec()
+    l.info("Main window open")
 
     credits()
     sys.exit()
