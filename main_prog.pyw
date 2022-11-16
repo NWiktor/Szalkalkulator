@@ -109,6 +109,9 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('File')
 
+        about_action = QAction("About", self, triggered=self.about)
+        file_menu.addAction(about_action)
+
 
     def _create_central_widget(self):
 
@@ -119,51 +122,48 @@ class MainWindow(QMainWindow):
 
         # Datafields
         self.szalhossz_input = QLineEdit()
-        self.szalhossz_input.setPlaceholderText(str(self.stock_length))
+        self.szalhossz_input.setText(str(self.stock_length))
         self.szalhossz_input.setFixedWidth(50)
         input_field.addRow("Szálhossz (mm)", self.szalhossz_input)
         self.fureszlap_input = QLineEdit()
-        self.fureszlap_input.setPlaceholderText(str(self.cutting_width))
+        self.fureszlap_input.setText(str(self.cutting_width))
         self.fureszlap_input.setFixedWidth(50)
         input_field.addRow("Fűrészlap vast. (mm)", self.fureszlap_input)
 
-        self.darab_hossza = QLineEdit()
-        self.darab_hossza.setPlaceholderText("Pl.: 500")
-        self.darab_hossza.setFixedWidth(50)
-        input_field.addRow("Darab hossza (mm)", self.darab_hossza)
+        self.darab_hossz = QLineEdit()
+        self.darab_hossz.setPlaceholderText("Pl.: 500")
+        self.darab_hossz.setFixedWidth(50)
+        input_field.addRow("Darab hossza (mm)", self.darab_hossz)
         self.darab_nbr = QLineEdit()
         self.darab_nbr.setPlaceholderText("Pl.: 2")
         self.darab_nbr.setFixedWidth(50)
-        input_field.addRow("Darab mennyiség (mm)", self.darab_nbr)
+        input_field.addRow("Darab mennyiség (db)", self.darab_nbr)
         self.darab_label = QLineEdit()
         self.darab_label.setPlaceholderText("Pl.: Part 01")
         self.darab_label.setFixedWidth(50)
-        input_field.addRow("Darab hossza (mm)", self.darab_label)
+        input_field.addRow("Címke", self.darab_label)
         data_field.addLayout(input_field)
 
         button_box = QHBoxLayout()
         # button_box.addStretch()
         add_button = QPushButton("Hozzáad")
         add_button.clicked.connect(self.add_item)
-        del_button = QPushButton("Töröl")
-        del_button.clicked.connect(self.delete_item)
         print_button = QPushButton("Print")
-        print_button.clicked.connect(self.print_results)
+        print_button.clicked.connect(self.create_pdf)
         button_box.addWidget(add_button)
-        button_box.addWidget(del_button)
         button_box.addWidget(print_button)
+        button_box.addStretch()
         data_field.addLayout(button_box)
         layout.addLayout(data_field,0,0)
 
         # List
-        l1 = QTreeWidgetItem(["1", "B", "C", "D"])
-        stock_table = QTreeWidget(self)
-        # stock_table.resize(500,200)
-        stock_table.setColumnCount(4)
-        stock_table.setHeaderLabels(["Poz.", "Hossz", "Mennyiség", "Címke"])
-        stock_table.addTopLevelItem(l1)
-        
-        layout.addWidget(stock_table,0,1)
+        self.stock_table = QTreeWidget(self)
+        # self.stock_table.resize(500,200)
+        self.stock_table.setColumnCount(4)
+        self.stock_table.setHeaderLabels(["Poz.", "Hossz", "Mennyiség", "Címke"])
+        self.stock_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.stock_table.customContextMenuRequested.connect(self._show_context_menu)
+        layout.addWidget(self.stock_table,0,1)
 
         # Add stocks
         pattern_table = QHBoxLayout()
@@ -184,68 +184,73 @@ class MainWindow(QMainWindow):
         self.move(qt_rectangle.topLeft())
 
 
+    def _show_context_menu(self, position):
+        display_action1 = QAction("Delete item")
+        display_action1.triggered.connect(self.delete_item)
+        menu = QMenu(self.stock_table)
+        menu.addAction(display_action1)
+        menu.exec_(self.stock_table.mapToGlobal(position))
 
-    def onFrameConfigure(self, event):
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-
-
-    def update(self):
-        #Tree 1
-        self.tree = ttk.Treeview(self.rightframe, height = 11,
-        yscrollcommand = self.vert_scroll.set, selectmode="browse")
-        self.vert_scroll.configure(command=self.tree.yview)
-
-        self.tree["columns"]=("1", "2", "3")
-        self.tree.column("#0", width=40, minwidth=40, stretch="False")
-        self.tree.column("1", width=50, minwidth=50, stretch="False")
-        self.tree.column("2", width=50, minwidth=50, stretch="False")
-        self.tree.column("3", width=100, minwidth=100, stretch="False")
-
-        self.tree.heading("#0",text="Poz.",anchor=tk.W)
-        self.tree.heading("1", text="Menny.",anchor=tk.W)
-        self.tree.heading("2", text="Hossz",anchor=tk.W)
-        self.tree.heading("3", text="Címke",anchor=tk.W)
-
-        # Level 1
-        i = 1
-        for p in self.stocks.keys():
-            index = i*10
-            self.tree.insert("", "end", iid = p, text=index,
-            values=(self.stocks[p]["nbr"], self.stocks[p]["len"],
-            self.stocks[p]["label"]))
-            self.tree.item(p, open=True)
-            i += 1
-
-        self.tree.grid(row=0, column = 0, sticky='WE',
-        padx = 2.5, pady = (5, 2.5))
-
-
-        # Display patterns
-        for widget in self.canvasframe.winfo_children():
-            widget.destroy()
-
-        c = 0
-        for m in self.results.keys():
-            self.canvasframe.grid_columnconfigure(c, weight=1, minsize=40)
-            self.stock_pattern = Stock_pattern(master=self.canvasframe,
-            elements=self.results[m]["pattern"], max_length=self.stock_length)
-            self.stock_pattern.grid(row=0, column=c, sticky='NSW', padx=(5, 0))
-
-            multiply = self.results[m]["nbr"]
-            self.infolabel1 = ttk.Label(self.canvasframe,
-            text="x{0}".format(multiply), anchor="center")
-            self.infolabel1.grid(row=1, column=c, sticky='NS', padx=(5, 0))
-            c += 1
-
-
-    def update_field(self, event=None):
+    # def onFrameConfigure(self, event):
+    #     self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    #
+    #
+    # def update(self):
+    #     #Tree 1
+    #     self.tree = ttk.Treeview(self.rightframe, height = 11,
+    #     yscrollcommand = self.vert_scroll.set, selectmode="browse")
+    #     self.vert_scroll.configure(command=self.tree.yview)
+    #
+    #     self.tree["columns"]=("1", "2", "3")
+    #     self.tree.column("#0", width=40, minwidth=40, stretch="False")
+    #     self.tree.column("1", width=50, minwidth=50, stretch="False")
+    #     self.tree.column("2", width=50, minwidth=50, stretch="False")
+    #     self.tree.column("3", width=100, minwidth=100, stretch="False")
+    #
+    #     self.tree.heading("#0",text="Poz.",anchor=tk.W)
+    #     self.tree.heading("1", text="Menny.",anchor=tk.W)
+    #     self.tree.heading("2", text="Hossz",anchor=tk.W)
+    #     self.tree.heading("3", text="Címke",anchor=tk.W)
+    #
+    #     # Level 1
+    #     i = 1
+    #     for p in self.stocks.keys():
+    #         index = i*10
+    #         self.tree.insert("", "end", iid = p, text=index,
+    #         values=(self.stocks[p]["nbr"], self.stocks[p]["len"],
+    #         self.stocks[p]["label"]))
+    #         self.tree.item(p, open=True)
+    #         i += 1
+    #
+    #     self.tree.grid(row=0, column = 0, sticky='WE',
+    #     padx = 2.5, pady = (5, 2.5))
+    #
+    #
+    #     # Display patterns
+    #     for widget in self.canvasframe.winfo_children():
+    #         widget.destroy()
+    #
+    #     c = 0
+    #     for m in self.results.keys():
+    #         self.canvasframe.grid_columnconfigure(c, weight=1, minsize=40)
+    #         self.stock_pattern = Stock_pattern(master=self.canvasframe,
+    #         elements=self.results[m]["pattern"], max_length=self.stock_length)
+    #         self.stock_pattern.grid(row=0, column=c, sticky='NSW', padx=(5, 0))
+    #
+    #         multiply = self.results[m]["nbr"]
+    #         self.infolabel1 = ttk.Label(self.canvasframe,
+    #         text="x{0}".format(multiply), anchor="center")
+    #         self.infolabel1.grid(row=1, column=c, sticky='NS', padx=(5, 0))
+    #         c += 1
+    #
+    #
+    def update_field(self):
         """ Regenerate tables and calculates cutting patterns
         dynamcially when focusing out of entry field.
         """
 
-        self.stock_length = int(self.textbox1.get())
-        self.cutting_width = int(self.textbox2.get())
-
+        self.stock_length = int(self.szalhossz_input.text())
+        self.cutting_width = int(self.fureszlap_input.text())
         self.update()
         self.calculate()
 
@@ -254,51 +259,59 @@ class MainWindow(QMainWindow):
         """ Add item to stock list """
 
         uuid_str = str(uuid.uuid4())
-        label = str(self.textbox3.get()) # Címke, bármit elfogadunk
+        label = str(self.darab_label.text()) # Címke, bármit elfogadunk
 
         # Mennyiség, ha nincs vagy ha üres, akkor default = 1
-        if (self.textbox4.get() == None) or (self.textbox4.get() == ""):
+        if (self.darab_nbr.text() is None) or (self.darab_nbr.text() == ""):
             nbr = 1
         else:
-            nbr = int(self.textbox4.get())
+            nbr = int(self.darab_nbr.text())
 
         # Ha nincs hossz, akkor értelmetlen
-        if (self.textbox5.get() == None) or (self.textbox5.get() == ""):
-            print("Hiányzó hossz!")
+        if (self.darab_hossz.text() is None) or (self.darab_hossz.text() == ""):
+            self.statusbar.showMessage("Hiányzó hossz!", 3000)
             return
 
         else:
             try:
-                len = int(self.textbox5.get())
+                len = int(self.darab_hossz.text())
 
             except Exception as e:
-                print("Váratlan hiba: {0}".format(e))
+                self.statusbar.showMessage("Váratlan hiba: {0}".format(e), 3000)
                 return
 
         # Ha a hossz túl nagy
         if len > self.stock_length:
-            print("Szál túl hosszú!")
-            pass
+            self.statusbar.showMessage("Szál túl hosszú!")
 
         else:
             self.stocks.update({uuid_str : {"nbr": nbr, "len": len, "label" : label}})
+            self.stock_table.addTopLevelItem(QTreeWidgetItem([uuid_str, str(len), str(nbr), label]))
 
-        self.update()
+        # TODO: Check this functions!
+        # self.update()
         self.calculate()
 
 
+    # TODO: Make this context menu element
     def delete_item(self):
         """ Delete item from list """
 
-        ids = []
-        sections = []
-        sel = self.tree.selection() # Kiválasztott 'item'-ek listája
+        # column = self.stock_table.currentColumn()
+        item_uuid = self.stock_table.currentItem().text(0)
+        print("Right-clicked item is: " + item_uuid)
 
-        for s in sel: # Kiválasztott elemeken végigiterálok
+        # Delete item from widget
+        root = self.stock_table.invisibleRootItem()
+        for item in self.stock_table.selectedItems():
+            (item.parent() or root).removeChild(item)
+
+        # Delete item from memory
+        for s in item_uuid: # Kiválasztott elemeken végigiterálok
             if s in self.stocks:
                 del self.stocks[s]
 
-        self.update()
+        # self.update()
         self.calculate()
 
 
@@ -389,6 +402,8 @@ class MainWindow(QMainWindow):
         # Check for same patterns
         self.check_for_multiple_patterns()
 
+
+        # # TODO: Move to a separate function: prepare PDF data or similar
         # Ha készen vagyok, kiadom az eredményt
         self.print_data.clear()
 
@@ -445,24 +460,28 @@ class MainWindow(QMainWindow):
             del self.results[d]
 
 
-    def print_results(self):
-        """ Print results by default printer. """
+    def create_pdf(self):
+        """ Create PDF with the results. """
         # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
         # https://stackoverflow.com/questions/2878616/programmatically-print-a-pdf-file-specifying-printer
+        # https://www.pythonguis.com/examples/python-pdf-report-generator/
+        # https://towardsdatascience.com/creating-pdf-files-with-python-ad3ccadfae0f
 
-        # Generate image
-        # import io
-        # import subprocess
-        # from PIL import Image
-        #
-        # ps = self.canvas.postscript(colormode='color')
-        # img = Image.open(io.BytesIO(ps.encode('utf-8')))
-        # img.save('/tmp/test.jpg')
-        #
-        # return
+        # Generate pdf
+        # TODO: Add code
 
+        # Try to open file immediately
+        try:
+            os.startfile(filename)
+
+        except Exception:
+            # If startfile not available, show dialog.
+            QMessageBox.information(self, "Finished", "PDF has been generated!")
+
+
+    def print_pdf(self):
+        """ Print results by default printer. """
         filename = tempfile.mktemp (".txt")
-
         with open(filename, "w") as file:
             file.writelines(self.print_data)
 
@@ -480,17 +499,23 @@ class MainWindow(QMainWindow):
             )
 
 
-    def help(self):
-        help_info()
+    # TODO: Change lic info
+    def about(self):
+        """Prints program version data."""
+
+        window_text = (f"Wetzl Viktor - {RELEASE_DATE}\n"
+        + "(C) Minden jog fenntartva!")
+
+        about_w = QMessageBox()
+        about_w.setWindowTitle("About")
+        about_w.setIcon(QMessageBox.Information)
+        about_w.setText("Stock Calculator App")
+        about_w.setInformativeText(window_text)
+        about_w.exec_()
 
 
     def close_window(self):
         self.master.destroy()
-
-
-def credits():
-    print("\nSzalkalkulátor V1.2")
-    print("Wetzl Viktor - 2020-01-11 - (C) Minden jog fenntartva!")
 
 
 ### Fő program
@@ -503,6 +528,4 @@ if __name__ == '__main__':
     main.center()
     app.exec()
     l.info("Main window open")
-
-    credits()
     sys.exit()
