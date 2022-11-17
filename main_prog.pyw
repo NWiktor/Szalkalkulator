@@ -51,12 +51,15 @@ RELEASE_DATE = "2022-11-16"
 # TODO: Refactor
 class Stock_pattern_item(QWidget):
 
-    def __init__(self, width1, color = 'green', *args, **kwargs):
+    def __init__(self, width1: int = 15, color: str = 'lightgrey', *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.color = color
-        self.width1 = width1
-        print(f"{color=}, {width1=}")
+        self._item_width = width1
+
+        # Gui params
+        self._gui_width = None
+        self._gui_height = 30
 
         # Sizepolicy
         self.setSizePolicy(QSizePolicy.MinimumExpanding,
@@ -64,10 +67,14 @@ class Stock_pattern_item(QWidget):
 
 
     def sizeHint(self):
-        return QSize(int(self.width1/5), 50)
+        self._gui_width = self._item_width / self.parent()._pixel_ratio
+        return QSize(int(self._gui_width), self._gui_height)
 
 
     def paintEvent(self, e):
+
+        # print(f"{self.parent().frameGeometry().width()}")
+
         painter = QPainter(self)
         brush = QBrush()
         brush.setColor(QColor(self.color))
@@ -75,87 +82,59 @@ class Stock_pattern_item(QWidget):
         rect = QRect(0, 0, painter.device().width(), painter.device().height())
         painter.fillRect(rect, brush)
 
-        # Get current state.
-        # dial = self.parent()._text_lower_limit
+        # Write length text inside item
+        if self._item_width >= int(self.parent()._show_text_limit):
+            pen = painter.pen()
+            pen.setColor(QColor('black'))
+            painter.setPen(pen)
+            font = painter.font()
+            font.setFamily('Times')
+            font.setPointSize(10)
+            painter.setFont(font)
 
-        pen = painter.pen()
-        pen.setColor(QColor('red'))
-        painter.setPen(pen)
+            font_metrics = QFontMetrics(painter.font());
+            item_length_text = "{}".format(self._item_width)
+            x = int(self._gui_width/2)
+            y = self._gui_height
+            xoffset = font_metrics.boundingRect(item_length_text).width()/2;
+            yoffset = font_metrics.boundingRect(item_length_text).height()/2;
+            painter.drawText(int(x-xoffset), int(y-yoffset), item_length_text);
 
-        font = painter.font()
-        font.setFamily('Times')
-        font.setPointSize(18)
-        painter.setFont(font)
-
-        fm = QFontMetrics(painter.font());
-        sx = "{}".format(self.width1)
-
-        x = int(self.width1/5/2)
-        y = 50
-        xoffset = fm.boundingRect(sx).width()/2;
-        yoffset = fm.boundingRect(sx).height()/2;
-        painter.drawText(int(x-xoffset), int(y-yoffset), sx);
-
-        # painter.drawText(rect, )
         painter.end()
 
 
 class Stock_pattern_widget(QWidget):
 
-    def __init__(self, elements: list, max_length: int = 6000, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, elements: list, waste: int = None, max_length: int = 6000, *args, **kwargs):
+        super(Stock_pattern_widget, self).__init__(*args, **kwargs)
+
         # Constructor
         self.elements = elements
         self.max_length = max_length
+        if waste is None:
+            self.waste = max_length-sum(elements)
+        else:
+            self.waste = waste
 
         # GUI variables
         self._height = 1
         self._width = 1
-        self._text_lower_limit = 400
-        self.pixel_ratio = float(self.max_length / self._height)
+        self._show_text_limit = 250 # minimum length in mm, where the text shows
+        self._max_visible_width = 600 # px
+        self._pixel_ratio = int(self.max_length / (self._max_visible_width + 15*len(self.elements)))
+        print(f"{self.frameGeometry().width()}")
 
-        # TODO: add color definitions here:
-        color=['green', 'blue', 'green', 'blue']
+        # Create stock items
         layout = QHBoxLayout()
         for i, value in enumerate(self.elements):
-            layout.addWidget(Stock_pattern_item(self.elements[i], color[i]), alignment=Qt.AlignCenter)
+            layout.addWidget(Stock_pattern_item(self.elements[i], 'limegreen'), alignment=Qt.AlignCenter)
+            layout.addWidget(Stock_pattern_item(), alignment=Qt.AlignCenter)
+
+        layout.addWidget(Stock_pattern_item(self.waste, 'red'), alignment=Qt.AlignCenter)
 
         layout.setSpacing(0)
         layout.addStretch()
         self.setLayout(layout)
-
-
-class Stock_pattern(tk.Canvas):
-
-    def __init__(self, master, max_length = 6000, elements=[], **kwargs):
-        self.field_height = 250
-        self.cutting_pixel_width = 2
-        self.text_limit = 400
-        self.pixel_ratio = float(max_length/self.field_height)
-
-        tk.Canvas.__init__(self, master, bg="chartreuse2", width=40,
-        height=self.field_height, **kwargs)
-
-        # Calculate relative point of rectangle
-        act_length = 0
-
-        for k in elements:
-            item_length = int(k/self.pixel_ratio)
-
-            # Item
-            self.create_rectangle(0, act_length,
-            42, act_length+item_length-self.cutting_pixel_width,
-            fill="LightSteelBlue3", width=0)
-
-            # Item text
-            if k >= self.text_limit:
-                self.create_text(20, act_length+(item_length)/2,
-                font="Times 8", text="{0}".format(k))
-
-            # Cutting width
-            self.create_rectangle(0, act_length+item_length-self.cutting_pixel_width,
-            42, act_length+item_length, fill="gray15", width=0)
-            act_length += item_length
 
 
 class MainWindow(QMainWindow):
@@ -243,8 +222,8 @@ class MainWindow(QMainWindow):
 
         # Add stocks
         self.pattern_table = QHBoxLayout()
-        self.pattern_table.addWidget(Stock_pattern_widget([250, 500, 700, 890]))
-        self.pattern_table.addWidget(Stock_pattern_widget([250, 400, 300, 690]))
+        # self.pattern_table.addWidget(Stock_pattern_widget([250, 500, 700, 890]))
+        # self.pattern_table.addWidget(Stock_pattern_widget([250, 400, 300, 690]))
         layout.addLayout(self.pattern_table,1,0,0,2)
         layout_widget.setLayout(layout)
         self.setCentralWidget(layout_widget)
@@ -268,6 +247,7 @@ class MainWindow(QMainWindow):
         menu = QMenu(self.stock_table)
         menu.addAction(display_action1)
         menu.exec_(self.stock_table.mapToGlobal(position))
+
 
     # def onFrameConfigure(self, event):
     #     self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -600,18 +580,17 @@ class MainWindow(QMainWindow):
 
 ### Fő program
 if __name__ == '__main__':
-    app = QApplication([])
-    app.setStyle('Fusion')
-
-    main = MainWindow()
-    main.show()
-    main.center()
-    app.exec()
-    l.info("Main window open")
-    sys.exit()
-
     # app = QApplication([])
     # app.setStyle('Fusion')
-    # stock_widget = Stock_pattern_widget([250, 500, 700, 890])
-    # stock_widget.show()
-    # app.exec_()
+    # main = MainWindow()
+    # main.show()
+    # main.center()
+    # app.exec()
+    # l.info("Main window open")
+    # sys.exit()
+
+    app = QApplication([])
+    app.setStyle('Fusion')
+    stock_widget = Stock_pattern_widget([250, 500, 700, 890])
+    stock_widget.show()
+    app.exec_()
