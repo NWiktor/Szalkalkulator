@@ -37,7 +37,7 @@ import tkinter as tk
 from PyQt5.QtWidgets import (QApplication, QWidget, QMenu, QMainWindow,
 QAction, QDockWidget, QListWidget, QGridLayout, QVBoxLayout, QHBoxLayout,
 QTreeView, QDesktopWidget, QPushButton, QMessageBox, QFormLayout, QLineEdit,
-QTreeWidgetItem, QTreeWidget, QSizePolicy)
+QTreeWidgetItem, QTreeWidget, QSizePolicy, QLabel, QSpacerItem)
 from PyQt5.QtGui import (QStandardItemModel, QPainter, QBrush, QColor, QFontMetrics)
 from PyQt5.QtCore import (Qt, QRect, QSize)
 
@@ -48,10 +48,9 @@ from PyQt5.QtCore import (Qt, QRect, QSize)
 RELEASE_DATE = "2022-11-16"
 
 
-# TODO: Refactor
 class Stock_pattern_item(QWidget):
 
-    def __init__(self, width1: int = 15, color: str = 'lightgrey', *args, **kwargs):
+    def __init__(self, width1: int = 0, color: str = 'black', *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.color = color
@@ -67,14 +66,14 @@ class Stock_pattern_item(QWidget):
 
 
     def sizeHint(self):
-        self._gui_width = self._item_width / self.parent()._pixel_ratio
+        if self._item_width == 0:
+            self._gui_width = 1
+        else:
+            self._gui_width = (self._item_width / self.parent()._pixel_ratio)-1
         return QSize(int(self._gui_width), self._gui_height)
 
 
     def paintEvent(self, e):
-
-        # print(f"{self.parent().frameGeometry().width()}")
-
         painter = QPainter(self)
         brush = QBrush()
         brush.setColor(QColor(self.color))
@@ -105,12 +104,14 @@ class Stock_pattern_item(QWidget):
 
 class Stock_pattern_widget(QWidget):
 
-    def __init__(self, elements: list, waste: int = None, max_length: int = 6000, *args, **kwargs):
+    def __init__(self, elements: list, number: int = 1, waste: int = None, max_length: int = 6000, *args, **kwargs):
         super(Stock_pattern_widget, self).__init__(*args, **kwargs)
 
         # Constructor
         self.elements = elements
         self.max_length = max_length
+        self.number = f"x{number}"
+
         if waste is None:
             self.waste = max_length-sum(elements)
         else:
@@ -120,9 +121,8 @@ class Stock_pattern_widget(QWidget):
         self._height = 1
         self._width = 1
         self._show_text_limit = 250 # minimum length in mm, where the text shows
-        self._max_visible_width = 600 # px
-        self._pixel_ratio = int(self.max_length / (self._max_visible_width + 15*len(self.elements)))
-        print(f"{self.frameGeometry().width()}")
+        self._max_gui_width = 600 # width of the stock bar in pixels
+        self._pixel_ratio = int(self.max_length / (self._max_gui_width ))
 
         # Create stock items
         layout = QHBoxLayout()
@@ -131,8 +131,12 @@ class Stock_pattern_widget(QWidget):
             layout.addWidget(Stock_pattern_item(), alignment=Qt.AlignCenter)
 
         layout.addWidget(Stock_pattern_item(self.waste, 'red'), alignment=Qt.AlignCenter)
+        verticalSpacer = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        layout.addItem(verticalSpacer)
+        layout.addWidget(QLabel(self.number))
 
         layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addStretch()
         self.setLayout(layout)
 
@@ -151,9 +155,9 @@ class MainWindow(QMainWindow):
 
         self.results = {}
         # self.results = {"A": {"nbr": 3, "pattern": [1450, 1450, 1450, 1450]},
-        # "B": {"nbr": 1, "pattern": [500, 500, 1450, 950]},
-        # "C": {"nbr": 2, "pattern": [780, 657, 345, 880]},
-        # "D": {"nbr": 6, "pattern": [1045, 650, 890]}}
+        # "B": {"nbr": 1, "pattern": [500, 500, 1450, 950], "waste": 23231},
+        # "C": {"nbr": 2, "pattern": [780, 657, 345, 880], "waste": 23231},
+        # "D": {"nbr": 6, "pattern": [1045, 650, 890], "waste": 21321}}
 
         self.print_data = []
         self._create_menubar()
@@ -209,6 +213,7 @@ class MainWindow(QMainWindow):
         button_box.addWidget(print_button)
         button_box.addStretch()
         data_field.addLayout(button_box)
+        data_field.addStretch()
         layout.addLayout(data_field,0,0)
 
         # List
@@ -220,11 +225,9 @@ class MainWindow(QMainWindow):
         self.stock_table.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self.stock_table,0,1)
 
-        # Add stocks
-        self.pattern_table = QHBoxLayout()
-        # self.pattern_table.addWidget(Stock_pattern_widget([250, 500, 700, 890]))
-        # self.pattern_table.addWidget(Stock_pattern_widget([250, 400, 300, 690]))
-        layout.addLayout(self.pattern_table,1,0,0,2)
+        # Add pattern table
+        self.pattern_table = QVBoxLayout()
+        layout.addLayout(self.pattern_table,1,0,2,0)
         layout_widget.setLayout(layout)
         self.setCentralWidget(layout_widget)
 
@@ -249,69 +252,28 @@ class MainWindow(QMainWindow):
         menu.exec_(self.stock_table.mapToGlobal(position))
 
 
-    # def onFrameConfigure(self, event):
-    #     self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-    #
-    #
-    # def update(self):
-    #     #Tree 1
-    #     self.tree = ttk.Treeview(self.rightframe, height = 11,
-    #     yscrollcommand = self.vert_scroll.set, selectmode="browse")
-    #     self.vert_scroll.configure(command=self.tree.yview)
-    #
-    #     self.tree["columns"]=("1", "2", "3")
-    #     self.tree.column("#0", width=40, minwidth=40, stretch="False")
-    #     self.tree.column("1", width=50, minwidth=50, stretch="False")
-    #     self.tree.column("2", width=50, minwidth=50, stretch="False")
-    #     self.tree.column("3", width=100, minwidth=100, stretch="False")
-    #
-    #     self.tree.heading("#0",text="Poz.",anchor=tk.W)
-    #     self.tree.heading("1", text="Menny.",anchor=tk.W)
-    #     self.tree.heading("2", text="Hossz",anchor=tk.W)
-    #     self.tree.heading("3", text="Címke",anchor=tk.W)
-    #
-    #     # Level 1
-    #     i = 1
-    #     for p in self.stocks.keys():
-    #         index = i*10
-    #         self.tree.insert("", "end", iid = p, text=index,
-    #         values=(self.stocks[p]["nbr"], self.stocks[p]["len"],
-    #         self.stocks[p]["label"]))
-    #         self.tree.item(p, open=True)
-    #         i += 1
-    #
-    #     self.tree.grid(row=0, column = 0, sticky='WE',
-    #     padx = 2.5, pady = (5, 2.5))
-    #
-    #
-    #     # Display patterns
-    #     for widget in self.canvasframe.winfo_children():
-    #         widget.destroy()
-    #
-    #     c = 0
-    #     for m in self.results.keys():
-    #         self.canvasframe.grid_columnconfigure(c, weight=1, minsize=40)
-    #         self.stock_pattern = Stock_pattern(master=self.canvasframe,
-    #         elements=self.results[m]["pattern"], max_length=self.stock_length)
-    #         self.stock_pattern.grid(row=0, column=c, sticky='NSW', padx=(5, 0))
-    #
-    #         multiply = self.results[m]["nbr"]
-    #         self.infolabel1 = ttk.Label(self.canvasframe,
-    #         text="x{0}".format(multiply), anchor="center")
-    #         self.infolabel1.grid(row=1, column=c, sticky='NS', padx=(5, 0))
-    #         c += 1
-
-
     # TODO: This function is needed later!
-    # def update_field(self):
-    #     """ Regenerate tables and calculates cutting patterns
-    #     dynamcially when focusing out of entry field.
-    #     """
-    #
-    #     self.stock_length = int(self.szalhossz_input.text())
-    #     self.cutting_width = int(self.fureszlap_input.text())
-    #     self.update()
-    #     self.calculate()
+    def update_stock_pattern(self):
+        """ Regenerate tables and calculates cutting patterns
+        dynamcially when focusing out of entry field.
+        """
+
+        self.stock_length = int(self.szalhossz_input.text())
+        self.cutting_width = int(self.fureszlap_input.text())
+        self.calculate()
+
+        # print(self.results)
+
+        for i in reversed(range(self.pattern_table.count())):
+                widget = self.pattern_table.takeAt(i).widget()
+                if widget is not None:
+                    widget.setParent(None)
+
+        for k in self.results.keys():
+            self.pattern_table.addWidget(Stock_pattern_widget(self.results[k]["pattern"],
+            waste=self.results[k]["waste"], number=self.results[k]["nbr"]))
+
+        self.pattern_table.update()
 
 
     def add_item(self):
@@ -347,9 +309,7 @@ class MainWindow(QMainWindow):
             self.stocks.update({uuid_str : {"nbr": nbr, "len": len, "label" : label}})
             self.stock_table.addTopLevelItem(QTreeWidgetItem([uuid_str, str(len), str(nbr), label]))
 
-        # TODO: Check this functions!
-        # self.update()
-        self.calculate()
+        self.update_stock_pattern()
 
 
     # TODO: Make this context menu element
@@ -370,8 +330,7 @@ class MainWindow(QMainWindow):
             if s in self.stocks:
                 del self.stocks[s]
 
-        # self.update()
-        self.calculate()
+        self.update_stock_pattern()
 
 
     def oversized_item(self):
@@ -437,7 +396,7 @@ class MainWindow(QMainWindow):
 
             # Set pattern
             uuid_str = str(uuid.uuid4())
-            self.results[uuid_str] = {"pattern": actual_stock, "nbr" : 1}
+            self.results[uuid_str] = {"pattern": actual_stock, "waste": maradek, "nbr" : 1}
             eredmeny.append(akt_szal)
 
             if maradek > 0: # Ha a maradek hossz nagyobb mint nulla, akkor hulladek
@@ -580,17 +539,19 @@ class MainWindow(QMainWindow):
 
 ### Fő program
 if __name__ == '__main__':
-    # app = QApplication([])
-    # app.setStyle('Fusion')
-    # main = MainWindow()
-    # main.show()
-    # main.center()
-    # app.exec()
-    # l.info("Main window open")
-    # sys.exit()
-
     app = QApplication([])
     app.setStyle('Fusion')
-    stock_widget = Stock_pattern_widget([250, 500, 700, 890])
-    stock_widget.show()
-    app.exec_()
+    main = MainWindow()
+    main.show()
+    main.center()
+    app.exec()
+    # l.info("Main window open")
+    sys.exit()
+
+    # Test widget only
+    # app = QApplication([])
+    # app.setStyle('Fusion')
+    # stock_widget = Stock_pattern_widget([250, 500, 700, 890])
+    # stock_widget.show()
+    # print(stock_widget.frameGeometry().width())
+    # app.exec_()
