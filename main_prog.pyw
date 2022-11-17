@@ -50,26 +50,19 @@ RELEASE_DATE = "2022-11-16"
 
 class Stock_pattern_item(QWidget):
 
-    def __init__(self, width1: int = 0, color: str = 'black', *args, **kwargs):
+    def __init__(self, stock_width, gui_width, color: str = 'black', *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.color = color
-        self._item_width = width1
-
-        # Gui params
-        self._gui_width = None
+        self._item_width = stock_width
+        # GUI params
+        self._gui_width = gui_width
         self._gui_height = 30
-
-        # Sizepolicy
         self.setSizePolicy(QSizePolicy.MinimumExpanding,
         QSizePolicy.MinimumExpanding)
 
 
     def sizeHint(self):
-        if self._item_width == 0:
-            self._gui_width = 1
-        else:
-            self._gui_width = (self._item_width / self.parent()._pixel_ratio)-1
         return QSize(int(self._gui_width), self._gui_height)
 
 
@@ -92,7 +85,7 @@ class Stock_pattern_item(QWidget):
             painter.setFont(font)
 
             font_metrics = QFontMetrics(painter.font());
-            item_length_text = "{}".format(self._item_width)
+            item_length_text = str(self._item_width)
             x = int(self._gui_width/2)
             y = self._gui_height
             xoffset = font_metrics.boundingRect(item_length_text).width()/2;
@@ -104,11 +97,12 @@ class Stock_pattern_item(QWidget):
 
 class Stock_pattern_widget(QWidget):
 
-    def __init__(self, elements: list, number: int = 1, waste: int = None, max_length: int = 6000, *args, **kwargs):
+    def __init__(self, stock_pieces: list, number: int = 1, waste: int = None,
+        max_length: int = 6000, *args, **kwargs):
         super(Stock_pattern_widget, self).__init__(*args, **kwargs)
 
         # Constructor
-        self.elements = elements
+        self.stock_pieces = stock_pieces
         self.max_length = max_length
         self.number = f"x{number}"
 
@@ -118,19 +112,29 @@ class Stock_pattern_widget(QWidget):
             self.waste = waste
 
         # GUI variables
-        self._height = 1
-        self._width = 1
         self._show_text_limit = 250 # minimum length in mm, where the text shows
         self._max_gui_width = 600 # width of the stock bar in pixels
         self._pixel_ratio = int(self.max_length / (self._max_gui_width ))
+        self.create_UI()
 
-        # Create stock items
+
+    def create_UI(self):
+        """ Create stock items. """
+        pixels_left = 600
+        separator_width = 1
         layout = QHBoxLayout()
-        for i, value in enumerate(self.elements):
-            layout.addWidget(Stock_pattern_item(self.elements[i], 'limegreen'), alignment=Qt.AlignCenter)
-            layout.addWidget(Stock_pattern_item(), alignment=Qt.AlignCenter)
+        for i, stock_length in enumerate(self.stock_pieces):
+            gui_width = (stock_length / self._pixel_ratio)
+            pixels_left -= gui_width
+            layout.addWidget(Stock_pattern_item(stock_length, gui_width-separator_width,
+            'limegreen'), alignment=Qt.AlignCenter)
+            layout.addWidget(Stock_pattern_item(0, separator_width), alignment=Qt.AlignCenter)
 
-        layout.addWidget(Stock_pattern_item(self.waste, 'red'), alignment=Qt.AlignCenter)
+        # Last item length is equal to the number of pixels left,
+        # this corrects cumulative rounding errors
+        if pixels_left != 0:
+            layout.addWidget(Stock_pattern_item(self.waste, pixels_left, 'red'), alignment=Qt.AlignCenter)
+            
         verticalSpacer = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
         layout.addItem(verticalSpacer)
         layout.addWidget(QLabel(self.number))
@@ -168,7 +172,7 @@ class MainWindow(QMainWindow):
     def _create_menubar(self):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('File')
-
+        # Add actions
         about_action = QAction("About", self, triggered=self.about)
         file_menu.addAction(about_action)
 
@@ -208,7 +212,7 @@ class MainWindow(QMainWindow):
         add_button = QPushButton("Hozzáad")
         add_button.clicked.connect(self.add_item)
         print_button = QPushButton("Print")
-        print_button.clicked.connect(self.create_pdf)
+        print_button.clicked.connect(self.create_pdf_report)
         button_box.addWidget(add_button)
         button_box.addWidget(print_button)
         button_box.addStretch()
@@ -252,7 +256,6 @@ class MainWindow(QMainWindow):
         menu.exec_(self.stock_table.mapToGlobal(position))
 
 
-    # TODO: This function is needed later!
     def update_stock_pattern(self):
         """ Regenerate tables and calculates cutting patterns
         dynamcially when focusing out of entry field.
@@ -260,15 +263,15 @@ class MainWindow(QMainWindow):
 
         self.stock_length = int(self.szalhossz_input.text())
         self.cutting_width = int(self.fureszlap_input.text())
-        self.calculate()
+        self.calculate_patterns()
 
-        # print(self.results)
-
+        # Delete layout elements
         for i in reversed(range(self.pattern_table.count())):
                 widget = self.pattern_table.takeAt(i).widget()
                 if widget is not None:
                     widget.setParent(None)
 
+        # Add new elements
         for k in self.results.keys():
             self.pattern_table.addWidget(Stock_pattern_widget(self.results[k]["pattern"],
             waste=self.results[k]["waste"], number=self.results[k]["nbr"]))
@@ -277,7 +280,7 @@ class MainWindow(QMainWindow):
 
 
     def add_item(self):
-        """ Add item to stock list """
+        """ Add item to stock list. """
 
         uuid_str = str(uuid.uuid4())
         label = str(self.darab_label.text()) # Címke, bármit elfogadunk
@@ -312,7 +315,6 @@ class MainWindow(QMainWindow):
         self.update_stock_pattern()
 
 
-    # TODO: Make this context menu element
     def delete_item(self):
         """ Delete item from list """
 
@@ -333,7 +335,7 @@ class MainWindow(QMainWindow):
         self.update_stock_pattern()
 
 
-    def oversized_item(self):
+    def delete_oversized_items(self):
         """ Delete oversized items """
 
         del_list = []
@@ -348,7 +350,7 @@ class MainWindow(QMainWindow):
             del self.stocks[d]
 
 
-    def calculate(self):
+    def calculate_patterns(self):
         """ Calculate cutting patterns """
 
         szalak = []
@@ -359,7 +361,7 @@ class MainWindow(QMainWindow):
         hulladek = [] #hulladek gyüjtő tömb
         self.results = {} # Eredmény tömb törlése
 
-        self.oversized_item() # Hosszú elemek törlése
+        self.delete_oversized_items() # Hosszú elemek törlése
 
         # Elemek hozzáadása a tömbhöz
         for k in self.stocks.keys():
@@ -478,7 +480,7 @@ class MainWindow(QMainWindow):
             del self.results[d]
 
 
-    def create_pdf(self):
+    def create_pdf_report(self):
         """ Create PDF with the results. """
         # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
         # https://stackoverflow.com/questions/2878616/programmatically-print-a-pdf-file-specifying-printer
