@@ -152,7 +152,9 @@ class MainWindow(QMainWindow):
         super().__init__(parent=None)
 
         self.setWindowTitle("Stock cutting calculator")
-        self.setMinimumSize(650, 350)
+        # self.setMinimumSize(650, 350)
+        # self.setSizePolicy(QSizePolicy.MinimumExpanding,
+        # QSizePolicy.MinimumExpanding)
 
         self.stock_length = 6000 # mm
         self.cutting_width = 3 # mm
@@ -232,19 +234,28 @@ class MainWindow(QMainWindow):
         # List
         stock_layout = QVBoxLayout()
         self.stock_table = QTreeWidget(self)
-        # self.stock_table.resize(300,100)
         self.stock_table.setColumnCount(4)
         self.stock_table.setHeaderLabels(["UUID", "Hossz", "Mennyiség", "Címke"])
         self.stock_table.setColumnHidden(0, True)
         self.stock_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.stock_table.customContextMenuRequested.connect(self._show_context_menu)
         stock_layout.addWidget(self.stock_table)
-        stock_layout.addStretch(1)
+        stock_layout.addStretch()
         layout.addLayout(stock_layout,0,1)
 
         # Add pattern table
+        pattern_layout = QVBoxLayout()
+        pattern_layout.addWidget(QLabel("Számítási eredmények"), alignment=Qt.AlignCenter)
         self.pattern_table = QVBoxLayout()
-        layout.addLayout(self.pattern_table,1,0,2,0)
+
+        pattern_layout.addLayout(self.pattern_table)
+        self.update_stock_pattern()
+
+        self.pattern_summary = QLabel("Összegzés")
+        pattern_layout.addWidget(self.pattern_summary, alignment=Qt.AlignCenter)
+        layout.addLayout(pattern_layout,1,0,2,0)
+
+        # Finialize layout
         layout_widget.setLayout(layout)
         self.setCentralWidget(layout_widget)
 
@@ -284,10 +295,17 @@ class MainWindow(QMainWindow):
                 if widget is not None:
                     widget.setParent(None)
 
-        # Add new elements
-        for k in self.results.keys():
-            self.pattern_table.addWidget(Stock_pattern_widget(self.results[k]["pattern"],
-            waste=self.results[k]["waste"], number=self.results[k]["nbr"]))
+        # Set placeholder before results
+        if not self.results:
+            results_placeholder = QLabel("Üres")
+            results_placeholder.setFixedWidth(622)
+            self.pattern_table.addWidget(results_placeholder, alignment=Qt.AlignCenter)
+
+        else:
+            # Add new elements
+            for k in self.results.keys():
+                self.pattern_table.addWidget(Stock_pattern_widget(self.results[k]["pattern"],
+                waste=self.results[k]["waste"], number=self.results[k]["nbr"]))
 
         self.pattern_table.update()
 
@@ -350,7 +368,7 @@ class MainWindow(QMainWindow):
         del_list = []
 
         for item_uuid in self.stocks.keys():
-            item_length = self.stocks[item]["len"]
+            item_length = self.stocks[item_uuid]["len"]
 
             if int(item_length) > self.stock_length: # Oversized item deletion:
                 del_list.append(item_uuid)
@@ -531,10 +549,10 @@ class MainWindow(QMainWindow):
 
     def test(self):
         """  """
-        # w = self.frameGeometry().width()
-        # h = self.frameGeometry().height()
-        # print(f"Window size: {w}x{h}")
-        self.clear_results()
+        w = self.frameGeometry().width()
+        h = self.frameGeometry().height()
+        print(f"Window size: {w}x{h}")
+        # self.clear_results()
 
 
     # TODO: Change lic info
