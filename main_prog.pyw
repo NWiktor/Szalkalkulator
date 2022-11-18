@@ -134,7 +134,7 @@ class Stock_pattern_widget(QWidget):
         # this corrects cumulative rounding errors
         if pixels_left != 0:
             layout.addWidget(Stock_pattern_item(self.waste, pixels_left, 'red'), alignment=Qt.AlignCenter)
-            
+
         verticalSpacer = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
         layout.addItem(verticalSpacer)
         layout.addWidget(QLabel(self.number))
@@ -150,6 +150,7 @@ class MainWindow(QMainWindow):
         super().__init__(parent=None)
 
         self.setWindowTitle("Stock cutting calculator - ")
+        self.setMinimumSize(650, 350)
 
         self.stock_length = 6000 # mm
         self.cutting_width = 3 # mm
@@ -173,6 +174,8 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('File')
         # Add actions
+        test_action = QAction("Test", self, triggered=self.test)
+        file_menu.addAction(test_action)
         about_action = QAction("About", self, triggered=self.about)
         file_menu.addAction(about_action)
 
@@ -211,7 +214,7 @@ class MainWindow(QMainWindow):
         # button_box.addStretch()
         add_button = QPushButton("Hozzáad")
         add_button.clicked.connect(self.add_item)
-        print_button = QPushButton("Print")
+        print_button = QPushButton("PDF")
         print_button.clicked.connect(self.create_pdf_report)
         button_box.addWidget(add_button)
         button_box.addWidget(print_button)
@@ -222,9 +225,10 @@ class MainWindow(QMainWindow):
 
         # List
         self.stock_table = QTreeWidget(self)
-        self.stock_table.resize(700,200)
+        self.stock_table.resize(400,200)
         self.stock_table.setColumnCount(4)
-        self.stock_table.setHeaderLabels(["Poz.", "Hossz", "Mennyiség", "Címke"])
+        self.stock_table.setHeaderLabels(["UUID", "Hossz", "Mennyiség", "Címke"])
+        self.stock_table.setColumnHidden(0, True)
         self.stock_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.stock_table.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self.stock_table,0,1)
@@ -328,9 +332,8 @@ class MainWindow(QMainWindow):
             (item.parent() or root).removeChild(item)
 
         # Delete item from memory
-        for s in item_uuid: # Kiválasztott elemeken végigiterálok
-            if s in self.stocks:
-                del self.stocks[s]
+        if item_uuid in self.stocks.keys():
+                del self.stocks[item_uuid]
 
         self.update_stock_pattern()
 
@@ -518,6 +521,13 @@ class MainWindow(QMainWindow):
             ".",
             0
             )
+
+
+    def test(self):
+        """  """
+        w = self.frameGeometry().width()
+        h = self.frameGeometry().height()
+        print(f"Window size: {w}x{h}")
 
 
     # TODO: Change lic info
