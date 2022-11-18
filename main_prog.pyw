@@ -502,22 +502,17 @@ class MainWindow(QMainWindow):
         last_uuid = None
         del_uuid = []
 
-        for k in self.patterns:
-            if last_pattern is None: # Ha az első vizsgálat, feltöltöm az adatokat
-                last_pattern = self.patterns[k]["pattern"]
-                last_nbr = int(self.patterns[k]["nbr"])
-                last_uuid = k
-
-            else: # Ha már van adat a last_patternben
+        for k, pattern in self.patterns.items():
+            if last_pattern is not None: # Ha már van adat a last_patternben
                 # Ha az aktuális pattern egyezik az előzővel
-                if last_pattern == (self.patterns[k]["pattern"]):
-                    self.patterns[k]["nbr"] = last_nbr + 1 # Increment pattern nbr
+                if last_pattern == (pattern["pattern"]):
+                    pattern["nbr"] = last_nbr + 1 # Increment pattern nbr
                     del_uuid.append(last_uuid) # Előző item hozzáadása a törlési tömbhöz
 
-                # Végül frissítem a last_adatokat
-                last_pattern = self.patterns[k]["pattern"]
-                last_nbr = int(self.patterns[k]["nbr"])
-                last_uuid = k
+            # Ha az első vizsgálat, és/vagy kész a check feltöltöm az adatokat
+            last_pattern = pattern["pattern"]
+            last_nbr = int(pattern["nbr"])
+            last_uuid = k
 
         for _uuid in del_uuid: # Item törlése
             del self.patterns[_uuid]
