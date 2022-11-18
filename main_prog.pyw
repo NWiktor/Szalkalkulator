@@ -47,7 +47,7 @@ from PyQt5.QtCore import (Qt, QRect, QSize)
 RELEASE_DATE = "2022-11-16"
 
 
-class Stock_pattern_item(QWidget):
+class StockPatternItem(QWidget):
 
     def __init__(self, stock_width, gui_width, color: str = 'black', *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -81,22 +81,22 @@ class Stock_pattern_item(QWidget):
             font.setPointSize(10)
             painter.setFont(font)
 
-            font_metrics = QFontMetrics(painter.font());
+            font_metrics = QFontMetrics(painter.font())
             item_length_text = str(self._item_width)
             x = int(self._gui_width/2)
             y = self._gui_height
-            xoffset = font_metrics.boundingRect(item_length_text).width()/2;
-            yoffset = font_metrics.boundingRect(item_length_text).height()/2;
-            painter.drawText(int(x-xoffset), int(y-yoffset), item_length_text);
+            xoffset = font_metrics.boundingRect(item_length_text).width()/2
+            yoffset = font_metrics.boundingRect(item_length_text).height()/2
+            painter.drawText(int(x-xoffset), int(y-yoffset), item_length_text)
 
         painter.end()
 
 
-class Stock_pattern_widget(QWidget):
+class StockPatternWidget(QWidget):
 
     def __init__(self, stock_pieces: list, number: int = 1, waste: int = None,
         max_length: int = 6000, *args, **kwargs):
-        super(Stock_pattern_widget, self).__init__(*args, **kwargs)
+        super(StockPatternWidget, self).__init__(*args, **kwargs)
 
         # Constructor
         self.stock_pieces = stock_pieces
@@ -126,15 +126,15 @@ class Stock_pattern_widget(QWidget):
         for i, stock_length in enumerate(self.stock_pieces):
             gui_width = (stock_length / self._pixel_ratio)
             pixels_left -= gui_width
-            layout.addWidget(Stock_pattern_item(stock_length,
+            layout.addWidget(StockPatternItem(stock_length,
             gui_width-separator_width, 'limegreen'), alignment=Qt.AlignCenter)
-            layout.addWidget(Stock_pattern_item(0, separator_width),
+            layout.addWidget(StockPatternItem(0, separator_width),
             alignment=Qt.AlignCenter)
 
         # Last item length is equal to the number of pixels left,
         # this strategy corrects cumulative rounding errors
         if pixels_left != 0:
-            layout.addWidget(Stock_pattern_item(self.waste, pixels_left, 'red'),
+            layout.addWidget(StockPatternItem(self.waste, pixels_left, 'red'),
             alignment=Qt.AlignCenter)
 
         layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -304,9 +304,9 @@ class MainWindow(QMainWindow):
 
         # Delete layout elements
         for i in reversed(range(self.pattern_table.count())):
-                widget = self.pattern_table.takeAt(i).widget()
-                if widget is not None:
-                    widget.setParent(None)
+            widget = self.pattern_table.takeAt(i).widget()
+            if widget is not None:
+                widget.setParent(None)
 
         # Set placeholder before results
         if not self.patterns:
@@ -322,14 +322,15 @@ class MainWindow(QMainWindow):
         else:
             # Add new elements
             for k in self.patterns.keys():
-                self.pattern_table.addWidget(Stock_pattern_widget(
+                self.pattern_table.addWidget(StockPatternWidget(
                 self.patterns[k]["pattern"],
                 waste=self.patterns[k]["waste"],
                 number=self.patterns[k]["nbr"],
                 max_length=self.stock_length))
 
             # Set summary line
-            self.pattern_summary.setText(f"Összesen: {self.total_stocks} / Veszteség: {self.total_waste}")
+            self.pattern_summary.setText(
+            f"Összesen: {self.total_stocks} / Veszteség: {self.total_waste}")
 
         self.pattern_table.update()
 
@@ -616,7 +617,7 @@ if __name__ == '__main__':
     # Test widget only
     # app = QApplication([])
     # app.setStyle('Fusion')
-    # stock_widget = Stock_pattern_widget([250, 500, 700, 890])
+    # stock_widget = StockPatternWidget([250, 500, 700, 890])
     # stock_widget.show()
     # print(stock_widget.frameGeometry().width())
     # app.exec_()
