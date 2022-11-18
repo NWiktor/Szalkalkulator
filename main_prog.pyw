@@ -415,11 +415,8 @@ class MainWindow(QMainWindow):
         self.delete_oversized_items() # Hosszú elemek törlése
 
         # Elemek hozzáadása a tömbhöz
-        for k in self.stock_item_dict.keys():
-            length = int(self.stock_item_dict[k]["len"])
-            nbr = int(self.stock_item_dict[k]["nbr"])
-            stock_array = [length] * nbr
-            szalak += stock_array
+        for i, stock_item in self.stock_item_dict.items():
+            szalak += [int(stock_item["len"])] * int(stock_item["nbr"])
 
         szalak.sort(reverse=True) # csökkenő sorrendbe teszem a szálakat
 
@@ -430,7 +427,7 @@ class MainWindow(QMainWindow):
             maradek = self.stock_length ## aktuális szál maradéka
             torolni = []
 
-            #for i in range(0, len(szalak)): # Végigmegyek a szálak tömb minden elemén
+            # Végigmegyek a szálak tömb minden elemén
             for i, stock_item in enumerate(szalak):
                 if stock_item <= maradek: # Ha az aktuális száldarab rövidebb v egyenlő, mint a maradék
                     akt_hossz += (stock_item + self.cutting_width)  # Aktuális szálhosszhoz hozzáadom az elemet
