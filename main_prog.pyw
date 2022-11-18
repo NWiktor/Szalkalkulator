@@ -154,8 +154,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Stock cutting calculator")
         self.stock_length = 6000 # mm
         self.cutting_width = 3 # mm
-        self.stocks = {}
-        # self.stocks = {"A" : {"nbr": 2, "len": 4345, "label": "proba"},
+        self.stock_item_dict = {}
+        # self.stock_item_dict = {"A" : {"nbr": 2, "len": 4345, "label": "proba"},
         # "B" : {"nbr": 34, "len": 245633, "label": "proba2"}}
 
         self.patterns = {}
@@ -164,10 +164,8 @@ class MainWindow(QMainWindow):
         # "C": {"nbr": 2, "pattern": [780, 657, 345, 880], "waste": 23231},
         # "D": {"nbr": 6, "pattern": [1045, 650, 890], "waste": 21321}}
 
-        self.total_stocks = 0
-        self.total_waste = 0
-
-
+        self.total_stocks = "" # Formatted string of total nbr of stocks
+        self.total_waste = "" # Formatted string of total waste perc. and length
 
         self.print_data = []
         self._create_menubar()
@@ -223,12 +221,12 @@ class MainWindow(QMainWindow):
         button_box = QHBoxLayout()
         button_box.addStretch()
         add_button = QPushButton("Hozzáad")
-        add_button.clicked.connect(self.add_item)
+        add_button.clicked.connect(self.add_item_wrapper)
+        add_button.setShortcut("Return")
         print_button = QPushButton("PDF")
         print_button.clicked.connect(self.create_pdf_report)
         button_box.addWidget(add_button)
         button_box.addWidget(print_button)
-        # button_box.addStretch()
         data_field.addLayout(button_box)
         data_field.addStretch()
 
@@ -253,13 +251,10 @@ class MainWindow(QMainWindow):
         pattern_header = QLabel("Számítási eredmények")
         pattern_header.setFont(QFont('Arial', 10, QFont.Bold))
         pattern_layout.addWidget(pattern_header, alignment=Qt.AlignCenter)
-
         self.pattern_table = QVBoxLayout()
         pattern_layout.addLayout(self.pattern_table)
-
         self.pattern_summary = QLabel("")
         self.pattern_summary.setFont(QFont('Arial', 10, QFont.Bold))
-
         self.update_stock_pattern() # Update after adding all elements to layout
         pattern_layout.addWidget(self.pattern_summary, alignment=Qt.AlignCenter)
         layout.addLayout(pattern_layout,1,0,2,0)
@@ -267,6 +262,7 @@ class MainWindow(QMainWindow):
         # Finialize layout
         layout_widget.setLayout(layout)
         self.setCentralWidget(layout_widget)
+        self.darab_hossz.setFocus()
 
 
     def _create_status_bar(self):
@@ -287,6 +283,13 @@ class MainWindow(QMainWindow):
         menu = QMenu(self.stock_table)
         menu.addAction(display_action1)
         menu.exec_(self.stock_table.mapToGlobal(position))
+
+
+    def add_item_wrapper(self):
+        """ Wrapper """
+        self.darab_hossz.setFocus()
+        self.add_item()
+        self.darab_hossz.setText("")
 
 
     def update_stock_pattern(self):
@@ -357,7 +360,7 @@ class MainWindow(QMainWindow):
             self.statusbar.showMessage("Szál túl hosszú!")
 
         else:
-            self.stocks.update({uuid_str : {"nbr": nbr, "len": len, "label" : label}})
+            self.stock_item_dict.update({uuid_str : {"nbr": nbr, "len": len, "label" : label}})
             self.stock_table.addTopLevelItem(QTreeWidgetItem([uuid_str, str(len), str(nbr), label]))
 
         self.update_stock_pattern()
@@ -373,8 +376,8 @@ class MainWindow(QMainWindow):
             (item.parent() or root).removeChild(item)
 
         # Delete item from memory
-        if item_uuid in self.stocks.keys():
-                del self.stocks[item_uuid]
+        if item_uuid in self.stock_item_dict.keys():
+                del self.stock_item_dict[item_uuid]
 
         self.update_stock_pattern()
 
@@ -384,14 +387,14 @@ class MainWindow(QMainWindow):
 
         del_list = []
 
-        for item_uuid in self.stocks.keys():
-            item_length = self.stocks[item_uuid]["len"]
+        for item_uuid in self.stock_item_dict.keys():
+            item_length = self.stock_item_dict[item_uuid]["len"]
 
             if int(item_length) > self.stock_length: # Oversized item deletion:
                 del_list.append(item_uuid)
 
         for item_uuid in del_list:
-            del self.stocks[item_uuid]
+            del self.stock_item_dict[item_uuid]
 
 
     def calculate_patterns(self):
@@ -408,9 +411,9 @@ class MainWindow(QMainWindow):
         self.delete_oversized_items() # Hosszú elemek törlése
 
         # Elemek hozzáadása a tömbhöz
-        for k in self.stocks.keys():
-            length = int(self.stocks[k]["len"])
-            nbr = int(self.stocks[k]["nbr"])
+        for k in self.stock_item_dict.keys():
+            length = int(self.stock_item_dict[k]["len"])
+            nbr = int(self.stock_item_dict[k]["nbr"])
             stock_array = [length] * nbr
             szalak += stock_array
 
@@ -521,7 +524,7 @@ class MainWindow(QMainWindow):
 
     def clear_results(self):
         """  """
-        self.stocks = {}
+        self.stock_item_dict = {}
         self.patterns = {}
         self.stock_table.clear()
         self.update_stock_pattern()
