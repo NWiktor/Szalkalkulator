@@ -339,34 +339,36 @@ class MainWindow(QMainWindow):
         uuid_str = str(uuid.uuid4())
         label = str(self.darab_label.text()) # Címke, bármit elfogadunk
 
-        # Mennyiség, ha nincs vagy ha üres, akkor default = 1
-        if (self.darab_nbr.text() is None) or (self.darab_nbr.text() == ""):
-            nbr = 1
-        else:
-            nbr = int(self.darab_nbr.text())
-
-        # Ha nincs hossz, akkor értelmetlen
+        # Ha nincs hossz, akkor értelmetlen és visszalépek
         if (self.darab_hossz.text() is None) or (self.darab_hossz.text() == ""):
             self.statusbar.showMessage("Hiányzó hossz!", 3000)
             return
 
-        else:
-            try:
-                len = int(self.darab_hossz.text())
+        # TODO: Add check for zero!
+        # Mennyiség, ha nincs vagy ha üres, akkor default = 1
+        if (self.darab_nbr.text() is None) or (self.darab_nbr.text() == ""):
+            self.statusbar.showMessage("Hiányzó darabszám, alapértelmezetten: 1!", 3000)
+            nbr = 1
 
-            except Exception as e:
-                self.statusbar.showMessage("Váratlan hiba: {0}".format(e), 3000)
+        # Megpróbálom konvertálni és menteni, ha sikertelen raise error
+        try:
+            nbr = int(self.darab_nbr.text())
+            len = int(self.darab_hossz.text())
+            # Ha a beírt hossz túl nagy
+            if len > self.stock_length:
+                self.statusbar.showMessage("Szál túl hosszú!")
                 return
 
-        # Ha a hossz túl nagy
-        if len > self.stock_length:
-            self.statusbar.showMessage("Szál túl hosszú!")
-
-        else:
+            # Ha mindennek vége, akkor elmentem
             self.stock_item_dict.update({uuid_str : {"nbr": nbr, "len": len, "label" : label}})
             self.stock_table.addTopLevelItem(QTreeWidgetItem([uuid_str, str(len), str(nbr), label]))
 
-        self.update_stock_pattern()
+        except Exception as e:
+            self.statusbar.showMessage("Váratlan hiba: {0}".format(e), 3000)
+            return
+
+        finally:
+            self.update_stock_pattern()
 
 
     def delete_item(self):
@@ -483,15 +485,13 @@ class MainWindow(QMainWindow):
         self.print_data.append("\n-- DARABOLÁSI TERV --")
 
         # TODO: Move this to Stock item pattern (?)
-        for p in range(0, len(eredmeny)):
-            self.print_data.append("\n{0}".format(eredmeny[p])) # Eredmeny kiírása
+        for pat in range(0, len(eredmeny)):
+            self.print_data.append("\n{0}".format(eredmeny[pat])) # Eredmeny kiírása
 
         self.print_data.append("\n\n-- ÖSSZEGZÉS --")
         self.print_data.append("\nSzükséges szálmennyiség: " + self.total_stocks)
         self.print_data.append("\nHulladék mennyisége:" + self.total_waste)
         self.print_data.append("\nHulladékok: " + str(hulladek)) # Hulladek darabok
-
-
 
 
     def check_for_multiple_patterns(self):
