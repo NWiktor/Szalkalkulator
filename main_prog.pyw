@@ -392,12 +392,13 @@ class MainWindow(QMainWindow):
 
         del_list = []
 
-        for item_uuid in self.stock_item_dict.keys():
-            item_length = self.stock_item_dict[item_uuid]["len"]
-
-            if int(item_length) > self.stock_length: # Oversized item deletion:
+        for item_uuid, stock_item in self.stock_item_dict.items():
+            item_length = stock_item["len"]
+            # Oversized item detection:
+            if int(item_length) > self.stock_length:
                 del_list.append(item_uuid)
 
+        # TODO: Merge előző for loop-ba?
         for item_uuid in del_list:
             del self.stock_item_dict[item_uuid]
 
