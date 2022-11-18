@@ -190,20 +190,20 @@ class MainWindow(QMainWindow):
         layout_widget = QWidget()
         layout = QGridLayout()
         data_field = QVBoxLayout()
+        data_field_h = QHBoxLayout()
         input_field = QFormLayout()
 
         # Datafields
         self.szalhossz_input = QLineEdit()
         self.szalhossz_input.setText(str(self.stock_length))
         self.szalhossz_input.setFixedWidth(50)
-        input_field.addRow("Szálhossz (mm)", self.szalhossz_input)
+        szalhossz_label = QLabel("Szálhossz (mm)")
+        szalhossz_label.setFixedWidth(150)
+        input_field.addRow(szalhossz_label, self.szalhossz_input)
         self.fureszlap_input = QLineEdit()
         self.fureszlap_input.setText(str(self.cutting_width))
         self.fureszlap_input.setFixedWidth(50)
         input_field.addRow("Fűrészlap vast. (mm)", self.fureszlap_input)
-
-        # Separator boilerplate code:
-        # layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         self.darab_hossz = QLineEdit()
         self.darab_hossz.setPlaceholderText("Pl.: 500")
@@ -220,16 +220,20 @@ class MainWindow(QMainWindow):
         data_field.addLayout(input_field)
 
         button_box = QHBoxLayout()
+        button_box.addStretch()
         add_button = QPushButton("Hozzáad")
         add_button.clicked.connect(self.add_item)
         print_button = QPushButton("PDF")
         print_button.clicked.connect(self.create_pdf_report)
         button_box.addWidget(add_button)
         button_box.addWidget(print_button)
-        button_box.addStretch()
+        # button_box.addStretch()
         data_field.addLayout(button_box)
         data_field.addStretch()
-        layout.addLayout(data_field,0,0)
+
+        data_field_h.addLayout(data_field)
+        data_field_h.addStretch()
+        layout.addLayout(data_field_h,0,0)
 
         # List
         stock_layout = QVBoxLayout()
