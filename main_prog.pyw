@@ -280,7 +280,7 @@ class MainWindow(QMainWindow):
 
 
     def _show_context_menu(self, position):
-        display_action1 = QAction("Delete item")
+        display_action1 = QAction("Elem törlése")
         display_action1.triggered.connect(self.delete_item)
         menu = QMenu(self.stock_table)
         menu.addAction(display_action1)
@@ -296,9 +296,8 @@ class MainWindow(QMainWindow):
 
     def update_stock_pattern(self):
         """ Regenerate tables and calculates cutting patterns
-        dynamcially when focusing out of entry field.
+        dynamcially.
         """
-
         self.stock_length = int(self.szalhossz_input.text())
         self.cutting_width = int(self.fureszlap_input.text())
         self.calculate_patterns()
@@ -412,7 +411,6 @@ class MainWindow(QMainWindow):
         eredmeny = [] # eredmény gyűjtő tömb
         hulladek = [] #hulladek gyüjtő tömb
         self.patterns = {} # Eredmény tömb törlése
-
         self.delete_oversized_items() # Hosszú elemek törlése
 
         # Elemek hozzáadása a tömbhöz
@@ -474,26 +472,27 @@ class MainWindow(QMainWindow):
         # Check for same patterns
         self.check_for_multiple_patterns()
 
+        # Using new class variables
+        self.total_stocks = f"{len(eredmeny)} db ({self.stock_length} mm)"
+        self.total_waste = f"{hulladek_szazalek:.2f}% ({hulladek_hossz} mm)"
+
         #########
 
         # # TODO: Move to a separate function: prepare PDF data or similar
         # Ha készen vagyok, kiadom az eredményt
         self.print_data.clear()
-
         self.print_data.append("\n-- DARABOLÁSI TERV --")
+
+        # TODO: Move this to Stock item pattern (?)
         for p in range(0, len(eredmeny)):
             self.print_data.append("\n{0}".format(eredmeny[p])) # Eredmeny kiírása
 
         self.print_data.append("\n\n-- ÖSSZEGZÉS --")
-        self.print_data.append("\nSzükséges szálmennyiség: "
-        +"{0} db ({1} mm)".format(len(eredmeny), self.stock_length))
-        self.print_data.append("\nHulladék mennyisége: "
-        +"{0:.2f}% ({1} mm)".format(hulladek_szazalek, hulladek_hossz))
+        self.print_data.append("\nSzükséges szálmennyiség: " + self.total_stocks)
+        self.print_data.append("\nHulladék mennyisége:" + self.total_waste)
         self.print_data.append("\nHulladékok: " + str(hulladek)) # Hulladek darabok
 
-        # Using new class variables
-        self.total_stocks = f"{len(eredmeny)} db ({self.stock_length} mm)"
-        self.total_waste = f"{hulladek_szazalek:.2f}% ({hulladek_hossz} mm)"
+
 
 
     def check_for_multiple_patterns(self):
