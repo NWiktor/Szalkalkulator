@@ -174,6 +174,8 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('File')
         # Add actions
+        clear_action = QAction("Clear results", self, triggered=self.clear_results)
+        file_menu.addAction(clear_action)
         test_action = QAction("Test", self, triggered=self.test)
         file_menu.addAction(test_action)
         about_action = QAction("About", self, triggered=self.about)
@@ -225,7 +227,7 @@ class MainWindow(QMainWindow):
         # List
         stock_layout = QVBoxLayout()
         self.stock_table = QTreeWidget(self)
-        self.stock_table.resize(400,200)
+        self.stock_table.resize(500,150)
         self.stock_table.setColumnCount(4)
         self.stock_table.setHeaderLabels(["UUID", "Hossz", "Mennyiség", "Címke"])
         self.stock_table.setColumnHidden(0, True)
@@ -486,6 +488,14 @@ class MainWindow(QMainWindow):
             del self.results[d]
 
 
+    def clear_results(self):
+        """  """
+        self.stocks = {}
+        self.results = {}
+        self.update_stock_pattern()
+        self.statusbar.showMessage("Eredmények törölve!", 3000)
+
+
     def create_pdf_report(self):
         """ Create PDF with the results. """
         # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
@@ -528,9 +538,10 @@ class MainWindow(QMainWindow):
 
     def test(self):
         """  """
-        w = self.frameGeometry().width()
-        h = self.frameGeometry().height()
-        print(f"Window size: {w}x{h}")
+        # w = self.frameGeometry().width()
+        # h = self.frameGeometry().height()
+        # print(f"Window size: {w}x{h}")
+        self.clear_results()
 
 
     # TODO: Change lic info
