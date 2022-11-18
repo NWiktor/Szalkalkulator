@@ -196,12 +196,14 @@ class MainWindow(QMainWindow):
         self.szalhossz_input = QLineEdit()
         self.szalhossz_input.setText(str(self.stock_length))
         self.szalhossz_input.setFixedWidth(50)
+        self.szalhossz_input.textChanged.connect(self.clear_results)
         szalhossz_label = QLabel("Szálhossz (mm)")
         szalhossz_label.setFixedWidth(150)
         input_field.addRow(szalhossz_label, self.szalhossz_input)
         self.fureszlap_input = QLineEdit()
         self.fureszlap_input.setText(str(self.cutting_width))
         self.fureszlap_input.setFixedWidth(50)
+        self.fureszlap_input.textChanged.connect(self.clear_results)
         input_field.addRow("Fűrészlap vast. (mm)", self.fureszlap_input)
 
         self.darab_hossz = QLineEdit()
@@ -321,8 +323,11 @@ class MainWindow(QMainWindow):
         else:
             # Add new elements
             for k in self.patterns.keys():
-                self.pattern_table.addWidget(Stock_pattern_widget(self.patterns[k]["pattern"],
-                waste=self.patterns[k]["waste"], number=self.patterns[k]["nbr"]))
+                self.pattern_table.addWidget(Stock_pattern_widget(
+                self.patterns[k]["pattern"],
+                waste=self.patterns[k]["waste"],
+                number=self.patterns[k]["nbr"],
+                max_length=self.stock_length))
 
             # Set summary line
             self.pattern_summary.setText(f"Összesen: {self.total_stocks} / Veszteség: {self.total_waste}")
