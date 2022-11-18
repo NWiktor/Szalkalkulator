@@ -152,21 +152,22 @@ class MainWindow(QMainWindow):
         super().__init__(parent=None)
 
         self.setWindowTitle("Stock cutting calculator")
-        # self.setMinimumSize(650, 350)
-        # self.setSizePolicy(QSizePolicy.MinimumExpanding,
-        # QSizePolicy.MinimumExpanding)
-
         self.stock_length = 6000 # mm
         self.cutting_width = 3 # mm
         self.stocks = {}
         # self.stocks = {"A" : {"nbr": 2, "len": 4345, "label": "proba"},
         # "B" : {"nbr": 34, "len": 245633, "label": "proba2"}}
 
-        self.results = {}
-        # self.results = {"A": {"nbr": 3, "pattern": [1450, 1450, 1450, 1450]},
+        self.patterns = {}
+        # self.patterns = {"A": {"nbr": 3, "pattern": [1450, 1450, 1450, 1450]},
         # "B": {"nbr": 1, "pattern": [500, 500, 1450, 950], "waste": 23231},
         # "C": {"nbr": 2, "pattern": [780, 657, 345, 880], "waste": 23231},
         # "D": {"nbr": 6, "pattern": [1045, 650, 890], "waste": 21321}}
+
+        self.total_stocks = 0
+        self.total_waste = 0
+
+
 
         self.print_data = []
         self._create_menubar()
@@ -252,13 +253,14 @@ class MainWindow(QMainWindow):
         pattern_header = QLabel("Számítási eredmények")
         pattern_header.setFont(QFont('Arial', 10, QFont.Bold))
         pattern_layout.addWidget(pattern_header, alignment=Qt.AlignCenter)
+
         self.pattern_table = QVBoxLayout()
-
         pattern_layout.addLayout(self.pattern_table)
-        self.update_stock_pattern()
 
-        self.pattern_summary = QLabel("Összegzés")
+        self.pattern_summary = QLabel("")
         self.pattern_summary.setFont(QFont('Arial', 10, QFont.Bold))
+
+        self.update_stock_pattern() # Update after adding all elements to layout
         pattern_layout.addWidget(self.pattern_summary, alignment=Qt.AlignCenter)
         layout.addLayout(pattern_layout,1,0,2,0)
 
@@ -303,19 +305,24 @@ class MainWindow(QMainWindow):
                     widget.setParent(None)
 
         # Set placeholder before results
-        if not self.results:
-            results_placeholder = QLabel("Üres")
+        if not self.patterns:
+            results_placeholder = QLabel("Nincs szál")
             font = QFont('Arial', 10)
             font.setItalic(True)
             results_placeholder.setFont(font)
             results_placeholder.setFixedWidth(622)
             self.pattern_table.addWidget(results_placeholder, alignment=Qt.AlignCenter)
+            # Set summary line
+            self.pattern_summary.setText(f"Összesen: - / Veszteség: -")
 
         else:
             # Add new elements
-            for k in self.results.keys():
-                self.pattern_table.addWidget(Stock_pattern_widget(self.results[k]["pattern"],
-                waste=self.results[k]["waste"], number=self.results[k]["nbr"]))
+            for k in self.patterns.keys():
+                self.pattern_table.addWidget(Stock_pattern_widget(self.patterns[k]["pattern"],
+                waste=self.patterns[k]["waste"], number=self.patterns[k]["nbr"]))
+
+            # Set summary line
+            self.pattern_summary.setText(f"Összesen: {self.total_stocks} / Veszteség: {self.total_waste}")
 
         self.pattern_table.update()
 
@@ -396,7 +403,7 @@ class MainWindow(QMainWindow):
         hulladek_szazalek = 0
         eredmeny = [] # eredmény gyűjtő tömb
         hulladek = [] #hulladek gyüjtő tömb
-        self.results = {} # Eredmény tömb törlése
+        self.patterns = {} # Eredmény tömb törlése
 
         self.delete_oversized_items() # Hosszú elemek törlése
 
@@ -435,7 +442,7 @@ class MainWindow(QMainWindow):
 
             # Set pattern
             uuid_str = str(uuid.uuid4())
-            self.results[uuid_str] = {"pattern": actual_stock, "waste": maradek, "nbr" : 1}
+            self.patterns[uuid_str] = {"pattern": actual_stock, "waste": maradek, "nbr" : 1}
             eredmeny.append(akt_szal)
 
             if maradek > 0: # Ha a maradek hossz nagyobb mint nulla, akkor hulladek
@@ -476,6 +483,10 @@ class MainWindow(QMainWindow):
         +"{0:.2f}% ({1} mm)".format(hulladek_szazalek, hulladek_hossz))
         self.print_data.append("\nHulladékok: " + str(hulladek)) # Hulladek darabok
 
+        # Using new class variables
+        self.total_stocks = f"{len(eredmeny)} db ({self.stock_length} mm)"
+        self.total_waste = f"{hulladek_szazalek:.2f}% ({hulladek_hossz} mm)"
+
 
     def check_for_multiple_patterns(self):
         """ Merge cutting patterns """
@@ -485,33 +496,33 @@ class MainWindow(QMainWindow):
         last_uuid = None
         del_uuid = []
 
-        for k in self.results.keys():
+        for k in self.patterns.keys():
             if last_pattern == None: # Ha az első vizsgálat, feltöltöm az adatokat
-                last_pattern = self.results[k]["pattern"]
-                last_nbr = int(self.results[k]["nbr"])
+                last_pattern = self.patterns[k]["pattern"]
+                last_nbr = int(self.patterns[k]["nbr"])
                 last_uuid = k
 
             else: # Ha már van adat a last_patternben
                 a = last_pattern
-                b = self.results[k]["pattern"]
+                b = self.patterns[k]["pattern"]
 
                 if a == b: # Ha az aktuális pattern egyezik az előzővel
-                    self.results[k]["nbr"] = last_nbr + 1 # Increment pattern nbr
+                    self.patterns[k]["nbr"] = last_nbr + 1 # Increment pattern nbr
                     del_uuid.append(last_uuid) # Előző item hozzáadása a törlési tömbhöz
 
                 # Végül frissítem a last_adatokat
-                last_pattern = self.results[k]["pattern"]
-                last_nbr = int(self.results[k]["nbr"])
+                last_pattern = self.patterns[k]["pattern"]
+                last_nbr = int(self.patterns[k]["nbr"])
                 last_uuid = k
 
         for d in del_uuid: # Item törlése
-            del self.results[d]
+            del self.patterns[d]
 
 
     def clear_results(self):
         """  """
         self.stocks = {}
-        self.results = {}
+        self.patterns = {}
         self.stock_table.clear()
         self.update_stock_pattern()
         self.statusbar.showMessage("Eredmények törölve!", 3000)
