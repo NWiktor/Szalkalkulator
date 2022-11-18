@@ -31,7 +31,6 @@ import win32print
 from tkinter import ttk
 import tkinter as tk
 
-
 # pylint: disable = no-name-in-module
 # Third party imports
 from PyQt5.QtWidgets import (QApplication, QWidget, QMenu, QMainWindow,
@@ -52,11 +51,9 @@ class Stock_pattern_item(QWidget):
 
     def __init__(self, stock_width, gui_width, color: str = 'black', *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.color = color
-        self._item_width = stock_width
-        # GUI params
-        self._gui_width = gui_width
+        self._item_width = stock_width # Stock width in mm
+        self._gui_width = gui_width # Item visible width in px
         self._gui_height = 30
         self.setSizePolicy(QSizePolicy.MinimumExpanding,
         QSizePolicy.MinimumExpanding)
@@ -120,25 +117,30 @@ class Stock_pattern_widget(QWidget):
 
     def create_UI(self):
         """ Create stock items. """
+
         pixels_left = 600
         separator_width = 1
         layout = QHBoxLayout()
+
+        # Add stock items:
         for i, stock_length in enumerate(self.stock_pieces):
             gui_width = (stock_length / self._pixel_ratio)
             pixels_left -= gui_width
-            layout.addWidget(Stock_pattern_item(stock_length, gui_width-separator_width,
-            'limegreen'), alignment=Qt.AlignCenter)
-            layout.addWidget(Stock_pattern_item(0, separator_width), alignment=Qt.AlignCenter)
+            layout.addWidget(Stock_pattern_item(stock_length,
+            gui_width-separator_width, 'limegreen'), alignment=Qt.AlignCenter)
+            layout.addWidget(Stock_pattern_item(0, separator_width),
+            alignment=Qt.AlignCenter)
 
         # Last item length is equal to the number of pixels left,
-        # this corrects cumulative rounding errors
+        # this strategy corrects cumulative rounding errors
         if pixels_left != 0:
-            layout.addWidget(Stock_pattern_item(self.waste, pixels_left, 'red'), alignment=Qt.AlignCenter)
+            layout.addWidget(Stock_pattern_item(self.waste, pixels_left, 'red'),
+            alignment=Qt.AlignCenter)
 
-        verticalSpacer = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        layout.addItem(verticalSpacer)
+        layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
         layout.addWidget(QLabel(self.number))
 
+        # Finalize layout
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addStretch()
@@ -149,7 +151,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__(parent=None)
 
-        self.setWindowTitle("Stock cutting calculator - ")
+        self.setWindowTitle("Stock cutting calculator")
         self.setMinimumSize(650, 350)
 
         self.stock_length = 6000 # mm
@@ -197,7 +199,10 @@ class MainWindow(QMainWindow):
         self.fureszlap_input.setText(str(self.cutting_width))
         self.fureszlap_input.setFixedWidth(50)
         input_field.addRow("Fűrészlap vast. (mm)", self.fureszlap_input)
-        # TODO: Add separator here
+
+        # Separator boilerplate code:
+        # layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
         self.darab_hossz = QLineEdit()
         self.darab_hossz.setPlaceholderText("Pl.: 500")
         self.darab_hossz.setFixedWidth(50)
@@ -327,8 +332,6 @@ class MainWindow(QMainWindow):
         """ Delete item from list """
 
         item_uuid = self.stock_table.currentItem().text(0)
-        print("Right-clicked item is: " + item_uuid)
-
         # Delete item from widget
         root = self.stock_table.invisibleRootItem()
         for item in self.stock_table.selectedItems():
