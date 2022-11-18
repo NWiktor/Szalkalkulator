@@ -83,11 +83,11 @@ class StockPatternItem(QWidget):
 
             font_metrics = QFontMetrics(painter.font())
             item_length_text = str(self._item_width)
-            x = int(self._gui_width/2)
-            y = self._gui_height
+            x_pos = int(self._gui_width/2)
+            y_pos = self._gui_height
             xoffset = font_metrics.boundingRect(item_length_text).width()/2
             yoffset = font_metrics.boundingRect(item_length_text).height()/2
-            painter.drawText(int(x-xoffset), int(y-yoffset), item_length_text)
+            painter.drawText(int(x_pos-xoffset), int(y_pos-yoffset), item_length_text)
 
         painter.end()
 
@@ -96,7 +96,7 @@ class StockPatternWidget(QWidget):
 
     def __init__(self, stock_pieces: list, number: int = 1, waste: int = None,
         max_length: int = 6000, *args, **kwargs):
-        super(StockPatternWidget, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Constructor
         self.stock_pieces = stock_pieces
@@ -104,7 +104,7 @@ class StockPatternWidget(QWidget):
         self.number = f"x{number}"
 
         if waste is None:
-            self.waste = max_length-sum(elements)
+            self.waste = max_length - sum(stock_pieces)
         else:
             self.waste = waste
 
@@ -112,10 +112,10 @@ class StockPatternWidget(QWidget):
         self._show_text_limit = 250 # minimum length in mm, where the text shows
         self._max_gui_width = 600 # width of the stock bar in pixels
         self._pixel_ratio = int(self.max_length / (self._max_gui_width ))
-        self.create_UI()
+        self.create_ui()
 
 
-    def create_UI(self):
+    def create_ui(self):
         """ Create stock items. """
 
         pixels_left = 600
@@ -175,12 +175,12 @@ class MainWindow(QMainWindow):
 
     def _create_menubar(self):
         menu_bar = self.menuBar()
-        file_menu = menu_bar.addMenu('File')
+        file_menu = menu_bar.addMenu('Fájl')
         # Add actions
-        clear_action = QAction("Clear results", self, triggered=self.clear_results)
+        clear_action = QAction("Memória törlése", self, triggered=self.clear_results)
         file_menu.addAction(clear_action)
-        test_action = QAction("Test", self, triggered=self.test)
-        file_menu.addAction(test_action)
+        # test_action = QAction("Test", self, triggered=self.test)
+        # file_menu.addAction(test_action)
         about_action = QAction("About", self, triggered=self.about)
         file_menu.addAction(about_action)
 
@@ -576,14 +576,6 @@ class MainWindow(QMainWindow):
             )
 
 
-    def test(self):
-        """  """
-        w = self.frameGeometry().width()
-        h = self.frameGeometry().height()
-        print(f"Window size: {w}x{h}")
-        # self.clear_results()
-
-
     # TODO: Change lic info
     def about(self):
         """Prints program version data."""
@@ -611,13 +603,11 @@ if __name__ == '__main__':
     main.show()
     main.center()
     app.exec()
-    # l.info("Main window open")
     sys.exit()
 
-    # Test widget only
-    # app = QApplication([])
-    # app.setStyle('Fusion')
-    # stock_widget = StockPatternWidget([250, 500, 700, 890])
-    # stock_widget.show()
-    # print(stock_widget.frameGeometry().width())
-    # app.exec_()
+
+    # def test(self):
+    #     """  """
+    #     w = self.frameGeometry().width()
+    #     h = self.frameGeometry().height()
+    #     print(f"Window size: {w}x{h}")
