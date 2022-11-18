@@ -227,14 +227,14 @@ class MainWindow(QMainWindow):
         # List
         stock_layout = QVBoxLayout()
         self.stock_table = QTreeWidget(self)
-        # self.stock_table.resize(500,100)
+        # self.stock_table.resize(300,100)
         self.stock_table.setColumnCount(4)
         self.stock_table.setHeaderLabels(["UUID", "Hossz", "Mennyiség", "Címke"])
         self.stock_table.setColumnHidden(0, True)
         self.stock_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.stock_table.customContextMenuRequested.connect(self._show_context_menu)
         stock_layout.addWidget(self.stock_table)
-        stock_layout.addStretch()
+        stock_layout.addStretch(1)
         layout.addLayout(stock_layout,0,1)
 
         # Add pattern table
@@ -446,9 +446,6 @@ class MainWindow(QMainWindow):
         +"{0:.2f}% ({1} mm)".format(hulladek_szazalek, hulladek_hossz))
         self.print_data.append("\nHulladékok: " + str(hulladek)) # Hulladek darabok
 
-        # Képernyő frissítése
-        # self.update()
-
 
     def check_for_multiple_patterns(self):
         """ Merge cutting patterns """
@@ -459,32 +456,25 @@ class MainWindow(QMainWindow):
         del_uuid = []
 
         for k in self.results.keys():
-            # Ha az első vizsgálat, feltöltöm az adatokat
-            if last_pattern == None:
+            if last_pattern == None: # Ha az első vizsgálat, feltöltöm az adatokat
                 last_pattern = self.results[k]["pattern"]
                 last_nbr = int(self.results[k]["nbr"])
                 last_uuid = k
 
-            # Ha már van adat a last_patternben
-            else:
+            else: # Ha már van adat a last_patternben
                 a = last_pattern
                 b = self.results[k]["pattern"]
 
-                # Ha az aktuális pattern egyezik az előzővel
-                if a == b:
-                    # Aktuális pattern nbr emelése
-                    self.results[k]["nbr"] = last_nbr + 1
-
-                    # Előző item hozzáadása a törlési tömbhöz
-                    del_uuid.append(last_uuid)
+                if a == b: # Ha az aktuális pattern egyezik az előzővel
+                    self.results[k]["nbr"] = last_nbr + 1 # Increment pattern nbr
+                    del_uuid.append(last_uuid) # Előző item hozzáadása a törlési tömbhöz
 
                 # Végül frissítem a last_adatokat
                 last_pattern = self.results[k]["pattern"]
                 last_nbr = int(self.results[k]["nbr"])
                 last_uuid = k
 
-        for d in del_uuid:
-            print("Item törlése: {0}".format(d))
+        for d in del_uuid: # Item törlése
             del self.results[d]
 
 
