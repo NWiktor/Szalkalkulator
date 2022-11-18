@@ -22,22 +22,20 @@ Wetzl Viktor - 2021.04.01 - All rights reserved
 
 import uuid
 import sys
+import os
+import tempfile
 
 from fpdf import FPDF
-import tempfile
 import win32api
 import win32print
-
-from tkinter import ttk
-import tkinter as tk
 
 # pylint: disable = no-name-in-module
 # Third party imports
 from PyQt5.QtWidgets import (QApplication, QWidget, QMenu, QMainWindow,
-QAction, QDockWidget, QListWidget, QGridLayout, QVBoxLayout, QHBoxLayout,
-QTreeView, QDesktopWidget, QPushButton, QMessageBox, QFormLayout, QLineEdit,
+QAction, QGridLayout, QVBoxLayout, QHBoxLayout, QDesktopWidget, QPushButton,
+QMessageBox, QFormLayout, QLineEdit,
 QTreeWidgetItem, QTreeWidget, QSizePolicy, QLabel, QSpacerItem)
-from PyQt5.QtGui import (QStandardItemModel, QFont, QPainter, QBrush, QColor, QFontMetrics)
+from PyQt5.QtGui import (QFont, QPainter, QBrush, QColor, QFontMetrics)
 from PyQt5.QtCore import (Qt, QRect, QSize)
 
 # Local application imports
@@ -497,24 +495,22 @@ class MainWindow(QMainWindow):
 
 
     def check_for_multiple_patterns(self):
-        """ Merge cutting patterns """
+        """ Merge cutting patterns. """
 
         last_nbr = 0
         last_pattern = None
         last_uuid = None
         del_uuid = []
 
-        for k in self.patterns.keys():
-            if last_pattern == None: # Ha az első vizsgálat, feltöltöm az adatokat
+        for k in self.patterns:
+            if last_pattern is None: # Ha az első vizsgálat, feltöltöm az adatokat
                 last_pattern = self.patterns[k]["pattern"]
                 last_nbr = int(self.patterns[k]["nbr"])
                 last_uuid = k
 
             else: # Ha már van adat a last_patternben
-                a = last_pattern
-                b = self.patterns[k]["pattern"]
-
-                if a == b: # Ha az aktuális pattern egyezik az előzővel
+                # Ha az aktuális pattern egyezik az előzővel
+                if last_pattern == (self.patterns[k]["pattern"]):
                     self.patterns[k]["nbr"] = last_nbr + 1 # Increment pattern nbr
                     del_uuid.append(last_uuid) # Előző item hozzáadása a törlési tömbhöz
 
@@ -523,8 +519,8 @@ class MainWindow(QMainWindow):
                 last_nbr = int(self.patterns[k]["nbr"])
                 last_uuid = k
 
-        for d in del_uuid: # Item törlése
-            del self.patterns[d]
+        for _uuid in del_uuid: # Item törlése
+            del self.patterns[_uuid]
 
 
     def clear_results(self):
