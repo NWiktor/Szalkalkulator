@@ -227,7 +227,7 @@ class MainWindow(QMainWindow):
         # List
         stock_layout = QVBoxLayout()
         self.stock_table = QTreeWidget(self)
-        self.stock_table.resize(500,150)
+        # self.stock_table.resize(500,100)
         self.stock_table.setColumnCount(4)
         self.stock_table.setHeaderLabels(["UUID", "Hossz", "Mennyiség", "Címke"])
         self.stock_table.setColumnHidden(0, True)
@@ -236,7 +236,6 @@ class MainWindow(QMainWindow):
         stock_layout.addWidget(self.stock_table)
         stock_layout.addStretch()
         layout.addLayout(stock_layout,0,1)
-
 
         # Add pattern table
         self.pattern_table = QVBoxLayout()
@@ -430,6 +429,7 @@ class MainWindow(QMainWindow):
         # Check for same patterns
         self.check_for_multiple_patterns()
 
+        #########
 
         # # TODO: Move to a separate function: prepare PDF data or similar
         # Ha készen vagyok, kiadom az eredményt
@@ -447,7 +447,7 @@ class MainWindow(QMainWindow):
         self.print_data.append("\nHulladékok: " + str(hulladek)) # Hulladek darabok
 
         # Képernyő frissítése
-        self.update()
+        # self.update()
 
 
     def check_for_multiple_patterns(self):
@@ -492,6 +492,7 @@ class MainWindow(QMainWindow):
         """  """
         self.stocks = {}
         self.results = {}
+        self.stock_table.clear()
         self.update_stock_pattern()
         self.statusbar.showMessage("Eredmények törölve!", 3000)
 
