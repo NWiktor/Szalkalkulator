@@ -382,7 +382,7 @@ class MainWindow(QMainWindow):
 
         # Delete item from memory
         if item_uuid in self.stock_item_dict.keys():
-                del self.stock_item_dict[item_uuid]
+            del self.stock_item_dict[item_uuid]
 
         self.update_stock_pattern()
 
@@ -424,20 +424,19 @@ class MainWindow(QMainWindow):
         szalak.sort(reverse=True) # csökkenő sorrendbe teszem a szálakat
 
         while szalak != []: # Amíg a szálak tömb nem nulla, fut a számítás
-            pattern = {}
             actual_stock = []
             akt_szal = "|" # akutális szál összetétele / string formátumban
             akt_hossz = 0 # aktuális szál szálhossza
             maradek = self.stock_length ## aktuális szál maradéka
             torolni = []
 
-            for i in range(0, len(szalak)): # Végigmegyek a szálak tömb minden elemén
-                if szalak[i] <= maradek: # Ha az aktuális száldarab rövidebb v egyenlő, mint a maradék
-                    akt_hossz += (szalak[i] + self.cutting_width)  # Aktuális szálhosszhoz hozzáadom az elemet
-                    maradek -= (szalak[i] + self.cutting_width) # Maradékból kivonom az elemet
-                    akt_szal += "| {0:>4} ".format(szalak[i]) # A szál összetételhez hozzáadom az elemet
-
-                    actual_stock.append(szalak[i])
+            #for i in range(0, len(szalak)): # Végigmegyek a szálak tömb minden elemén
+            for i, stock_item in enumerate(szalak):
+                if stock_item <= maradek: # Ha az aktuális száldarab rövidebb v egyenlő, mint a maradék
+                    akt_hossz += (stock_item + self.cutting_width)  # Aktuális szálhosszhoz hozzáadom az elemet
+                    maradek -= (stock_item + self.cutting_width) # Maradékból kivonom az elemet
+                    akt_szal += f"| {stock_item:>4} " # A szál összetételhez hozzáadom az elemet
+                    actual_stock.append(stock_item)
                     torolni.append(i) # torlendő elemek index listájához hozzáadni az aktuálisat
 
                 else: # Ha az aktuális száldarab hosszabb, mint a maradék
@@ -445,7 +444,7 @@ class MainWindow(QMainWindow):
                         break # For ciklus megtörése, kilépés a while ciklusba
 
             # Ha kész az iteráció összesítem a szálat
-            akt_szal += "|| --> {0} mm".format(akt_hossz)
+            akt_szal += f"|| --> {akt_hossz} mm"
 
             # Set pattern
             uuid_str = str(uuid.uuid4())
