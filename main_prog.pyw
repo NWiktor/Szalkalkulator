@@ -211,7 +211,6 @@ class MainWindow(QMainWindow):
         data_field.addLayout(input_field)
 
         button_box = QHBoxLayout()
-        # button_box.addStretch()
         add_button = QPushButton("Hozzáad")
         add_button.clicked.connect(self.add_item)
         print_button = QPushButton("PDF")
@@ -224,6 +223,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(data_field,0,0)
 
         # List
+        stock_layout = QVBoxLayout()
         self.stock_table = QTreeWidget(self)
         self.stock_table.resize(400,200)
         self.stock_table.setColumnCount(4)
@@ -231,7 +231,10 @@ class MainWindow(QMainWindow):
         self.stock_table.setColumnHidden(0, True)
         self.stock_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.stock_table.customContextMenuRequested.connect(self._show_context_menu)
-        layout.addWidget(self.stock_table,0,1)
+        stock_layout.addWidget(self.stock_table)
+        stock_layout.addStretch()
+        layout.addLayout(stock_layout,0,1)
+
 
         # Add pattern table
         self.pattern_table = QVBoxLayout()
