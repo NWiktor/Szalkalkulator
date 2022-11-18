@@ -37,7 +37,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QMenu, QMainWindow,
 QAction, QDockWidget, QListWidget, QGridLayout, QVBoxLayout, QHBoxLayout,
 QTreeView, QDesktopWidget, QPushButton, QMessageBox, QFormLayout, QLineEdit,
 QTreeWidgetItem, QTreeWidget, QSizePolicy, QLabel, QSpacerItem)
-from PyQt5.QtGui import (QStandardItemModel, QPainter, QBrush, QColor, QFontMetrics)
+from PyQt5.QtGui import (QStandardItemModel, QFont, QPainter, QBrush, QColor, QFontMetrics)
 from PyQt5.QtCore import (Qt, QRect, QSize)
 
 # Local application imports
@@ -245,13 +245,16 @@ class MainWindow(QMainWindow):
 
         # Add pattern table
         pattern_layout = QVBoxLayout()
-        pattern_layout.addWidget(QLabel("Számítási eredmények"), alignment=Qt.AlignCenter)
+        pattern_header = QLabel("Számítási eredmények")
+        pattern_header.setFont(QFont('Arial', 10, QFont.Bold))
+        pattern_layout.addWidget(pattern_header, alignment=Qt.AlignCenter)
         self.pattern_table = QVBoxLayout()
 
         pattern_layout.addLayout(self.pattern_table)
         self.update_stock_pattern()
 
         self.pattern_summary = QLabel("Összegzés")
+        self.pattern_summary.setFont(QFont('Arial', 10, QFont.Bold))
         pattern_layout.addWidget(self.pattern_summary, alignment=Qt.AlignCenter)
         layout.addLayout(pattern_layout,1,0,2,0)
 
@@ -298,6 +301,9 @@ class MainWindow(QMainWindow):
         # Set placeholder before results
         if not self.results:
             results_placeholder = QLabel("Üres")
+            font = QFont('Arial', 10)
+            font.setItalic(True)
+            results_placeholder.setFont(font)
             results_placeholder.setFixedWidth(622)
             self.pattern_table.addWidget(results_placeholder, alignment=Qt.AlignCenter)
 
