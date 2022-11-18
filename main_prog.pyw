@@ -326,7 +326,6 @@ class MainWindow(QMainWindow):
     def delete_item(self):
         """ Delete item from list """
 
-        # column = self.stock_table.currentColumn()
         item_uuid = self.stock_table.currentItem().text(0)
         print("Right-clicked item is: " + item_uuid)
 
@@ -347,14 +346,14 @@ class MainWindow(QMainWindow):
 
         del_list = []
 
-        for k in self.stocks.keys():
-            akt_hossz = self.stocks[k]["len"]
-            if int(akt_hossz) > self.stock_length:
-                print("Szálhosszat meghaladó elem törölve: {0}".format(akt_hossz))
-                del_list.append(k)
+        for item_uuid in self.stocks.keys():
+            item_length = self.stocks[item]["len"]
 
-        for d in del_list:
-            del self.stocks[d]
+            if int(item_length) > self.stock_length: # Oversized item deletion:
+                del_list.append(item_uuid)
+
+        for item_uuid in del_list:
+            del self.stocks[item_uuid]
 
 
     def calculate_patterns(self):
