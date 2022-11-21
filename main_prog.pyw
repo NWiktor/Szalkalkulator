@@ -46,8 +46,10 @@ RELEASE_DATE = "2022-11-16"
 
 
 class StockPatternItem(QWidget):
+    """  """
 
-    def __init__(self, stock_width, gui_width, color: str = 'black', *args, **kwargs):
+    def __init__(self, stock_width, gui_width, *args, color: str = 'black', **kwargs):
+        """  """
         super().__init__(*args, **kwargs)
         self.color = color
         self._item_width = stock_width # Stock width in mm
@@ -70,7 +72,7 @@ class StockPatternItem(QWidget):
         painter.fillRect(rect, brush)
 
         # Write length text inside item
-        if self._item_width >= int(self.parent()._show_text_limit):
+        if self._item_width >= int(self.parent().show_text_limit):
             pen = painter.pen()
             pen.setColor(QColor('black'))
             painter.setPen(pen)
@@ -91,9 +93,10 @@ class StockPatternItem(QWidget):
 
 
 class StockPatternWidget(QWidget):
+    """  """
 
-    def __init__(self, stock_pieces: list, number: int = 1, waste: int = None,
-        max_length: int = 6000, *args, **kwargs):
+    def __init__(self, *args, stock_pieces: list, number: int = 1, waste: int = None,
+        max_length: int = 6000, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Constructor
@@ -107,7 +110,7 @@ class StockPatternWidget(QWidget):
             self.waste = waste
 
         # GUI variables
-        self._show_text_limit = 250 # minimum length in mm, where the text shows
+        self.show_text_limit = 250 # minimum length in mm, where the text shows
         self._max_gui_width = 600 # width of the stock bar in pixels
         self._pixel_ratio = int(self.max_length / (self._max_gui_width ))
         self.create_ui()
@@ -125,14 +128,14 @@ class StockPatternWidget(QWidget):
             gui_width = (stock_length / self._pixel_ratio)
             pixels_left -= gui_width
             layout.addWidget(StockPatternItem(stock_length,
-            gui_width-separator_width, 'limegreen'), alignment=Qt.AlignCenter)
+            gui_width-separator_width, color='limegreen'), alignment=Qt.AlignCenter)
             layout.addWidget(StockPatternItem(0, separator_width),
             alignment=Qt.AlignCenter)
 
         # Last item length is equal to the number of pixels left,
         # this strategy corrects cumulative rounding errors
         if pixels_left != 0:
-            layout.addWidget(StockPatternItem(self.waste, pixels_left, 'red'),
+            layout.addWidget(StockPatternItem(self.waste, pixels_left, color='red'),
             alignment=Qt.AlignCenter)
 
         layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -146,14 +149,16 @@ class StockPatternWidget(QWidget):
 
 
 class MainWindow(QMainWindow):
+    """  """
+
     def __init__(self):
         super().__init__(parent=None)
 
         self.setWindowTitle("Stock cutting calculator")
-        self.stock_length = 6000 # mm
-        self.cutting_width = 3 # mm
-        self.stock_item_dict = {}
-        # self.stock_item_dict = {"A" : {"nbr": 2, "len": 4345, "label": "proba"},
+        self.purchased_length = 6000 # Length of stock material at delivery condition
+        self.cutting_width = 3 # Width of the cutter disk, which goes to waste
+        self.parts = {} # Dictionary with the saved parts (length, number and label to identify).
+        # self.parts = {"A" : {"nbr": 2, "len": 4345, "label": "proba"},
         # "B" : {"nbr": 34, "len": 245633, "label": "proba2"}}
 
         self.patterns = {}
@@ -192,7 +197,7 @@ class MainWindow(QMainWindow):
 
         # Datafields
         self.szalhossz_input = QLineEdit()
-        self.szalhossz_input.setText(str(self.stock_length))
+        self.szalhossz_input.setText(str(self.purchased_length))
         self.szalhossz_input.setFixedWidth(50)
         self.szalhossz_input.textChanged.connect(self.clear_results)
         szalhossz_label = QLabel("Szálhossz (mm)")
@@ -296,7 +301,7 @@ class MainWindow(QMainWindow):
         """ Regenerate tables and calculates cutting patterns
         dynamcially.
         """
-        self.stock_length = int(self.szalhossz_input.text())
+        self.purchased_length = int(self.szalhossz_input.text())
         self.cutting_width = int(self.fureszlap_input.text())
         self.calculate_patterns()
 
@@ -314,17 +319,16 @@ class MainWindow(QMainWindow):
             results_placeholder.setFont(font)
             results_placeholder.setFixedWidth(622)
             self.pattern_table.addWidget(results_placeholder, alignment=Qt.AlignCenter)
-            # Set summary line
-            self.pattern_summary.setText(f"Összesen: - / Veszteség: -")
+            self.pattern_summary.setText("Összesen: - / Veszteség: -") # Set summary line
 
         else:
             # Add new elements
-            for k in self.patterns.keys():
+            for i, pattern in self.patterns.items():
                 self.pattern_table.addWidget(StockPatternWidget(
-                self.patterns[k]["pattern"],
-                waste=self.patterns[k]["waste"],
-                number=self.patterns[k]["nbr"],
-                max_length=self.stock_length))
+                stock_pieces= pattern["pattern"],
+                waste= pattern["waste"],
+                number= pattern["nbr"],
+                max_length= self.purchased_length))
 
             # Set summary line
             self.pattern_summary.setText(
@@ -353,18 +357,18 @@ class MainWindow(QMainWindow):
         # Megpróbálom konvertálni és menteni, ha sikertelen raise error
         try:
             nbr = int(self.darab_nbr.text())
-            len = int(self.darab_hossz.text())
+            length = int(self.darab_hossz.text())
             # Ha a beírt hossz túl nagy
-            if len > self.stock_length:
+            if length > self.purchased_length:
                 self.statusbar.showMessage("Szál túl hosszú!")
                 return
 
             # Ha mindennek vége, akkor elmentem
-            self.stock_item_dict.update({uuid_str : {"nbr": nbr, "len": len, "label" : label}})
-            self.stock_table.addTopLevelItem(QTreeWidgetItem([uuid_str, str(len), str(nbr), label]))
+            self.parts.update({uuid_str : {"nbr": nbr, "len": length, "label" : label}})
+            self.stock_table.addTopLevelItem(QTreeWidgetItem([uuid_str, str(length), str(nbr), label]))
 
-        except Exception as e:
-            self.statusbar.showMessage("Váratlan hiba: {0}".format(e), 3000)
+        except Exception as exc_msg:
+            self.statusbar.showMessage(f"Váratlan hiba: {exc_msg}", 3000)
             return
 
         finally:
@@ -381,8 +385,8 @@ class MainWindow(QMainWindow):
             (item.parent() or root).removeChild(item)
 
         # Delete item from memory
-        if item_uuid in self.stock_item_dict.keys():
-            del self.stock_item_dict[item_uuid]
+        if item_uuid in self.parts.keys():
+            del self.parts[item_uuid]
 
         self.update_stock_pattern()
 
@@ -392,32 +396,29 @@ class MainWindow(QMainWindow):
 
         del_list = []
 
-        for item_uuid, stock_item in self.stock_item_dict.items():
-            item_length = stock_item["len"]
+        for item_uuid, part in self.parts.items():
+            item_length = part["len"]
             # Oversized item detection:
-            if int(item_length) > self.stock_length:
+            if int(item_length) > self.purchased_length:
                 del_list.append(item_uuid)
 
-        # TODO: Merge előző for loop-ba?
         for item_uuid in del_list:
-            del self.stock_item_dict[item_uuid]
+            del self.parts[item_uuid]
 
 
     def calculate_patterns(self):
         """ Calculate cutting patterns """
 
         szalak = []
-        teljes_hossz = 0
-        hulladek_hossz = 0
-        hulladek_szazalek = 0
+        total_waste_length = 0
         eredmeny = [] # eredmény gyűjtő tömb
-        hulladek = [] #hulladek gyüjtő tömb
+        hulladek = [] # hulladek gyüjtő tömb
         self.patterns = {} # Eredmény tömb törlése
         self.delete_oversized_items() # Hosszú elemek törlése
 
         # Elemek hozzáadása a tömbhöz
-        for i, stock_item in self.stock_item_dict.items():
-            szalak += [int(stock_item["len"])] * int(stock_item["nbr"])
+        for i, part in self.parts.items():
+            szalak += [int(part["len"])] * int(part["nbr"])
 
         szalak.sort(reverse=True) # csökkenő sorrendbe teszem a szálakat
 
@@ -425,7 +426,7 @@ class MainWindow(QMainWindow):
             actual_stock = []
             akt_szal = "|" # akutális szál összetétele / string formátumban
             akt_hossz = 0 # aktuális szál szálhossza
-            maradek = self.stock_length ## aktuális szál maradéka
+            maradek = self.purchased_length ## aktuális szál maradéka
             torolni = []
 
             # Végigmegyek a szálak tömb minden elemén
@@ -451,7 +452,7 @@ class MainWindow(QMainWindow):
 
             if maradek > 0: # Ha a maradek hossz nagyobb mint nulla, akkor hulladek
                 hulladek.append(maradek)
-                hulladek_hossz += maradek
+                total_waste_length += maradek
 
             torolni.sort(reverse=True) # torlendo indexek csökkenő sorrendbe állítása ( ez kell? )
 
@@ -459,10 +460,10 @@ class MainWindow(QMainWindow):
                 szalak.pop(torolni[k])
 
         # Hulladék százalék kalkuláció
-        teljes_hossz = len(eredmeny) * self.stock_length
+        total_calc_length = len(eredmeny) * self.purchased_length
 
         try: # Ha nem viszek be adatot, akkor nullával osztás következik.
-            hulladek_szazalek = float(hulladek_hossz) / float(teljes_hossz) * 100
+            waste_percentage = float(total_waste_length) / float(total_calc_length) * 100
 
         except ZeroDivisionError:
             return
@@ -471,8 +472,8 @@ class MainWindow(QMainWindow):
         self.check_for_multiple_patterns()
 
         # Using new class variables
-        self.total_stocks = f"{len(eredmeny)} db ({self.stock_length} mm)"
-        self.total_waste = f"{hulladek_szazalek:.2f}% ({hulladek_hossz} mm)"
+        self.total_stocks = f"{len(eredmeny)} db ({self.purchased_length} mm)"
+        self.total_waste = f"{waste_percentage:.2f}% ({total_waste_length} mm)"
 
         #########
 
@@ -517,7 +518,7 @@ class MainWindow(QMainWindow):
 
     def clear_results(self):
         """  """
-        self.stock_item_dict = {}
+        self.parts = {}
         self.patterns = {}
         self.stock_table.clear()
         self.update_stock_pattern()
