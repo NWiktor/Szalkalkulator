@@ -409,66 +409,65 @@ class MainWindow(QMainWindow):
     def calculate_patterns(self):
         """ Calculate cutting patterns """
 
-        szalak = []
+        stock_item_list = []
         total_waste_length = 0
         eredmeny = [] # eredmény gyűjtő tömb
         hulladek = [] # hulladek gyüjtő tömb
-        self.patterns = {} # Eredmény tömb törlése
+        self.patterns = {} # eredmény tömb törlése
         self.delete_oversized_items() # Hosszú elemek törlése
 
         # Elemek hozzáadása a tömbhöz
         for i, part in self.parts.items():
-            szalak += [int(part["len"])] * int(part["nbr"])
+            stock_item_list += [int(part["len"])] * int(part["nbr"])
 
-        szalak.sort(reverse=True) # csökkenő sorrendbe teszem a szálakat
+        stock_item_list.sort(reverse=True) # csökkenő sorrendbe teszem a szálakat
 
-        while szalak != []: # Amíg a szálak tömb nem nulla, fut a számítás
+        while stock_item_list != []: # Amíg a szálak tömb nem nulla, fut a számítás
             actual_stock = []
             akt_szal = "|" # akutális szál összetétele / string formátumban
             akt_hossz = 0 # aktuális szál szálhossza
-            maradek = self.purchased_length ## aktuális szál maradéka
-            torolni = []
+            remainder = self.purchased_length # the remainder value starts from full size
+            del_item_list = []
 
-            # Végigmegyek a szálak tömb minden elemén
-            for i, stock_item in enumerate(szalak):
-                if stock_item <= maradek: # Ha az aktuális száldarab rövidebb v egyenlő, mint a maradék
+            for i, stock_item in enumerate(stock_item_list):
+                # If the current stock item is smaller or equal to the remainder
+                if stock_item <= remainder:
                     akt_hossz += (stock_item + self.cutting_width)  # Aktuális szálhosszhoz hozzáadom az elemet
-                    maradek -= (stock_item + self.cutting_width) # Maradékból kivonom az elemet
+                    remainder -= (stock_item + self.cutting_width) # Maradékból kivonom az elemet
                     akt_szal += f"| {stock_item:>4} " # A szál összetételhez hozzáadom az elemet
                     actual_stock.append(stock_item)
-                    torolni.append(i) # torlendő elemek index listájához hozzáadni az aktuálisat
+                    del_item_list.append(i) # torlendő elemek index listájához hozzáadni az aktuálisat
 
-                else: # Ha az aktuális száldarab hosszabb, mint a maradék
-                    if maradek < szalak[-1]: # Ha a maradék kisebb, mint az utolsó (legrövidebb elem), akkor kilépek
-                        break # For ciklus megtörése, kilépés a while ciklusba
+                # If the remainder is smaller then the smallest stock items left (last index), break the cycle
+                else:
+                    if remainder < stock_item_list[-1]:
+                        break
 
             # Ha kész az iteráció összesítem a szálat
             akt_szal += f"|| --> {akt_hossz} mm"
 
             # Set pattern
             uuid_str = str(uuid.uuid4())
-            self.patterns[uuid_str] = {"pattern": actual_stock, "waste": maradek, "nbr" : 1}
+            self.patterns[uuid_str] = {"pattern": actual_stock, "waste": remainder, "nbr" : 1}
             eredmeny.append(akt_szal)
 
-            if maradek > 0: # Ha a maradek hossz nagyobb mint nulla, akkor hulladek
-                hulladek.append(maradek)
-                total_waste_length += maradek
+            if remainder > 0: # Ha a remainder hossz nagyobb mint nulla, akkor hulladek
+                hulladek.append(remainder)
+                total_waste_length += remainder
 
-            torolni.sort(reverse=True) # torlendo indexek csökkenő sorrendbe állítása ( ez kell? )
-
-            for k in range(0, len(torolni)): #felhasznált darabok törlése a tömbből
-                szalak.pop(torolni[k])
-
-        # Hulladék százalék kalkuláció
-        total_calc_length = len(eredmeny) * self.purchased_length
-
-        try: # Ha nem viszek be adatot, akkor nullával osztás következik.
+            del_item_list.sort(reverse=True) # Delete indices are reversed, to avoid "index out of range error"
+            for k, item in enumerate(del_item_list):
+                stock_item_list.pop(item) # Delete items, by index
+        
+        # Summarize calculations
+        try:
+            total_calc_length = len(eredmeny) * self.purchased_length
             waste_percentage = float(total_waste_length) / float(total_calc_length) * 100
 
         except ZeroDivisionError:
             return
 
-        # Check for same patterns
+        # Check for same patterns and merge them
         self.check_for_multiple_patterns()
 
         # Using new class variables
