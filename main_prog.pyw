@@ -18,13 +18,12 @@ Info
 ----
 Wetzl Viktor - 2021.04.01 - All rights reserved
 """
-# TODO: Add proper licence type
 
+# TODO: Add proper licence type
 import uuid
 import sys
 import os
 import tempfile
-
 from fpdf import FPDF
 import win32api
 import win32print
@@ -38,10 +37,7 @@ QTreeWidgetItem, QTreeWidget, QSizePolicy, QLabel, QSpacerItem)
 from PyQt5.QtGui import (QFont, QPainter, QBrush, QColor, QFontMetrics)
 from PyQt5.QtCore import (Qt, QRect, QSize)
 
-# Local application imports
-# TODO: Implement log ?
-# from logger import MAIN_LOGGER as l
-
+# Global variables
 RELEASE_DATE = "2022-11-16"
 
 
@@ -153,23 +149,13 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__(parent=None)
-
         self.setWindowTitle("Stock cutting calculator")
         self.purchased_length = 6000 # Length of stock material at delivery condition
         self.cutting_width = 3 # Width of the cutter disk, which goes to waste
-        self.parts = {} # Dictionary with the saved parts (length, number and label to identify).
-        # self.parts = {"A" : {"nbr": 2, "len": 4345, "label": "proba"},
-        # "B" : {"nbr": 34, "len": 245633, "label": "proba2"}}
-
-        self.patterns = {}
-        # self.patterns = {"A": {"nbr": 3, "pattern": [1450, 1450, 1450, 1450]},
-        # "B": {"nbr": 1, "pattern": [500, 500, 1450, 950], "waste": 23231},
-        # "C": {"nbr": 2, "pattern": [780, 657, 345, 880], "waste": 23231},
-        # "D": {"nbr": 6, "pattern": [1045, 650, 890], "waste": 21321}}
-
+        self.parts = {} # Saved parts key's: length (int), number (int) and label (str)
+        self.patterns = {} # Keys: nbr (int), pattern (list of ints), waste (int)
         self.total_stocks = "" # Formatted string of total nbr of stocks
         self.total_waste = "" # Formatted string of total waste perc. and length
-
         self.print_data = []
         self._create_menubar()
         self._create_central_widget()
