@@ -411,49 +411,50 @@ class MainWindow(QMainWindow):
 
         stock_item_list = []
         total_waste_length = 0
-        eredmeny = [] # eredmény gyűjtő tömb
-        hulladek = [] # hulladek gyüjtő tömb
-        self.patterns = {} # eredmény tömb törlése
-        self.delete_oversized_items() # Hosszú elemek törlése
+        pattern_repr_list = []
+        waste_item_list = []
+        self.patterns = {} # Set as empty
+        self.delete_oversized_items()
 
         # Elemek hozzáadása a tömbhöz
         for i, part in self.parts.items():
             stock_item_list += [int(part["len"])] * int(part["nbr"])
 
-        stock_item_list.sort(reverse=True) # csökkenő sorrendbe teszem a szálakat
+        stock_item_list.sort(reverse=True) # Using decreasing order
 
-        while stock_item_list != []: # Amíg a szálak tömb nem nulla, fut a számítás
+        while stock_item_list != []: # Run until empty (all item is evaluated)
             actual_stock = []
-            akt_szal = "|" # akutális szál összetétele / string formátumban
-            akt_hossz = 0 # aktuális szál szálhossza
-            remainder = self.purchased_length # the remainder value starts from full size
+            current_pattern_repr = "|" # String representation of current pattern
+            current_pattern_length = 0 # Length of current pattern
+            remainder_length = self.purchased_length # the remainder value starts from full size
             del_item_list = []
 
             for i, stock_item in enumerate(stock_item_list):
                 # If the current stock item is smaller or equal to the remainder
-                if stock_item <= remainder:
-                    akt_hossz += (stock_item + self.cutting_width)  # Aktuális szálhosszhoz hozzáadom az elemet
-                    remainder -= (stock_item + self.cutting_width) # Maradékból kivonom az elemet
-                    akt_szal += f"| {stock_item:>4} " # A szál összetételhez hozzáadom az elemet
+                if stock_item <= remainder_length:
+                    current_pattern_length += (stock_item + self.cutting_width)
+                    remainder_length -= (stock_item + self.cutting_width) # Decrement remainder
+                    current_pattern_repr += f"| {stock_item:>4} "
                     actual_stock.append(stock_item)
-                    del_item_list.append(i) # torlendő elemek index listájához hozzáadni az aktuálisat
+                    del_item_list.append(i) # Add index of current item, to be removed
 
                 # If the remainder is smaller then the smallest stock items left (last index), break the cycle
                 else:
-                    if remainder < stock_item_list[-1]:
+                    if remainder_length < stock_item_list[-1]:
                         break
 
             # Ha kész az iteráció összesítem a szálat
-            akt_szal += f"|| --> {akt_hossz} mm"
+            current_pattern_repr += f"|| --> {current_pattern_length} mm"
 
             # Set pattern
             uuid_str = str(uuid.uuid4())
-            self.patterns[uuid_str] = {"pattern": actual_stock, "waste": remainder, "nbr" : 1}
-            eredmeny.append(akt_szal)
+            self.patterns[uuid_str] = {"pattern": actual_stock, "waste": remainder_length, "nbr" : 1}
+            pattern_repr_list.append(current_pattern_repr)
 
-            if remainder > 0: # Ha a remainder hossz nagyobb mint nulla, akkor hulladek
-                hulladek.append(remainder)
-                total_waste_length += remainder
+            # TODO: this can be evaluated without condition: waste += def-stock
+            if remainder_length > 0:
+                waste_item_list.append(remainder_length)
+                total_waste_length += remainder_length
 
             del_item_list.sort(reverse=True) # Delete indices are reversed, to avoid "index out of range error"
             for k, item in enumerate(del_item_list):
@@ -461,7 +462,7 @@ class MainWindow(QMainWindow):
         
         # Summarize calculations
         try:
-            total_calc_length = len(eredmeny) * self.purchased_length
+            total_calc_length = len(pattern_repr_list) * self.purchased_length
             waste_percentage = float(total_waste_length) / float(total_calc_length) * 100
 
         except ZeroDivisionError:
@@ -471,7 +472,7 @@ class MainWindow(QMainWindow):
         self.check_for_multiple_patterns()
 
         # Using new class variables
-        self.total_stocks = f"{len(eredmeny)} db ({self.purchased_length} mm)"
+        self.total_stocks = f"{len(pattern_repr_list)} db ({self.purchased_length} mm)"
         self.total_waste = f"{waste_percentage:.2f}% ({total_waste_length} mm)"
 
         #########
@@ -482,13 +483,13 @@ class MainWindow(QMainWindow):
         self.print_data.append("\n-- DARABOLÁSI TERV --")
 
         # TODO: Move this to Stock item pattern (?)
-        for pat in range(0, len(eredmeny)):
-            self.print_data.append("\n{0}".format(eredmeny[pat])) # Eredmeny kiírása
+        for pattern in pattern_repr_list:
+            self.print_data.append(pattern) # Eredmeny kiírása
 
         self.print_data.append("\n\n-- ÖSSZEGZÉS --")
         self.print_data.append("\nSzükséges szálmennyiség: " + self.total_stocks)
         self.print_data.append("\nHulladék mennyisége:" + self.total_waste)
-        self.print_data.append("\nHulladékok: " + str(hulladek)) # Hulladek darabok
+        self.print_data.append("\nHulladékok: " + str(waste_item_list)) # Hulladek darabok
 
 
     def check_for_multiple_patterns(self):
