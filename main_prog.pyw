@@ -120,7 +120,7 @@ class StockPatternWidget(QWidget):
         layout = QHBoxLayout()
 
         # Add stock items:
-        for i, stock_length in enumerate(self.stock_pieces):
+        for stock_length in self.stock_pieces:
             gui_width = (stock_length / self._pixel_ratio)
             pixels_left -= gui_width
             layout.addWidget(StockPatternItem(stock_length,
@@ -371,7 +371,7 @@ class MainWindow(QMainWindow):
             (item.parent() or root).removeChild(item)
 
         # Delete item from memory
-        if item_uuid in self.parts.keys():
+        if item_uuid in self.parts:
             del self.parts[item_uuid]
 
         self.update_stock_pattern()
@@ -443,8 +443,8 @@ class MainWindow(QMainWindow):
 
             # Delete indices are reversed, to avoid "index out of range error"
             del_item_list.sort(reverse=True)
-            for k, item in enumerate(del_item_list):
-                stock_item_list.pop(item) # Delete items, by index
+            for index in del_item_list:
+                stock_item_list.pop(index) # Delete items, by index
 
         # Summarize calculations
         try:
