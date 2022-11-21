@@ -451,12 +451,12 @@ class MainWindow(QMainWindow):
             self.patterns[uuid_str] = {"pattern": actual_stock, "waste": remainder_length, "nbr" : 1}
             pattern_repr_list.append(current_pattern_repr)
 
-            # TODO: this can be evaluated without condition: waste += def-stock
             if remainder_length > 0:
                 waste_item_list.append(remainder_length)
                 total_waste_length += remainder_length
 
-            del_item_list.sort(reverse=True) # Delete indices are reversed, to avoid "index out of range error"
+            # Delete indices are reversed, to avoid "index out of range error"
+            del_item_list.sort(reverse=True)
             for k, item in enumerate(del_item_list):
                 stock_item_list.pop(item) # Delete items, by index
         
@@ -474,22 +474,6 @@ class MainWindow(QMainWindow):
         # Using new class variables
         self.total_stocks = f"{len(pattern_repr_list)} db ({self.purchased_length} mm)"
         self.total_waste = f"{waste_percentage:.2f}% ({total_waste_length} mm)"
-
-        #########
-
-        # # TODO: Move to a separate function: prepare PDF data or similar
-        # Ha készen vagyok, kiadom az eredményt
-        self.print_data.clear()
-        self.print_data.append("\n-- DARABOLÁSI TERV --")
-
-        # TODO: Move this to Stock item pattern (?)
-        for pattern in pattern_repr_list:
-            self.print_data.append(pattern) # Eredmeny kiírása
-
-        self.print_data.append("\n\n-- ÖSSZEGZÉS --")
-        self.print_data.append("\nSzükséges szálmennyiség: " + self.total_stocks)
-        self.print_data.append("\nHulladék mennyisége:" + self.total_waste)
-        self.print_data.append("\nHulladékok: " + str(waste_item_list)) # Hulladek darabok
 
 
     def check_for_multiple_patterns(self):
@@ -525,6 +509,23 @@ class MainWindow(QMainWindow):
         self.statusbar.showMessage("Eredmények törölve!", 3000)
 
 
+    def create_text_for_print(self):
+        """  """
+
+        # Ha készen vagyok, kiadom az eredményt
+        self.print_data.clear()
+        self.print_data.append("\n-- DARABOLÁSI TERV --")
+
+        # TODO: Move this to Stock item pattern (?)
+        for pattern in pattern_repr_list:
+            self.print_data.append(pattern) # Eredmeny kiírása
+
+        self.print_data.append("\n\n-- ÖSSZEGZÉS --")
+        self.print_data.append("\nSzükséges szálmennyiség: " + self.total_stocks)
+        self.print_data.append("\nHulladék mennyisége:" + self.total_waste)
+        self.print_data.append("\nHulladékok: " + str(waste_item_list)) # Hulladek darabok
+
+
     def create_pdf_report(self):
         """ Create PDF with the results. """
         # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
@@ -532,6 +533,9 @@ class MainWindow(QMainWindow):
         # https://www.pythonguis.com/examples/python-pdf-report-generator/
         # https://towardsdatascience.com/creating-pdf-files-with-python-ad3ccadfae0f
         # https://towardsdatascience.com/creating-pdf-files-with-python-ad3ccadfae0f
+
+        # Prepare text for printing
+        self.create_text_for_print()
 
         # Generate pdf
         # TODO: Add code
