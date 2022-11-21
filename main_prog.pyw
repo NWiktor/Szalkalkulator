@@ -459,7 +459,7 @@ class MainWindow(QMainWindow):
             del_item_list.sort(reverse=True)
             for k, item in enumerate(del_item_list):
                 stock_item_list.pop(item) # Delete items, by index
-        
+
         # Summarize calculations
         try:
             total_calc_length = len(pattern_repr_list) * self.purchased_length
