@@ -4,3 +4,8 @@
 
 # Ignore developer folder (output for debug files, etc.)
 /dev/
+
+# Ignore generated files
+*.zip
+*.exe
+*.pdf
