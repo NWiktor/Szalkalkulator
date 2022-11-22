@@ -6,6 +6,6 @@
 /dev/
 
 # Ignore generated files
-/main_prog.zip
-/main_prog.exe
-/*.pdf
+*.zip
+*.exe
+*.pdf
