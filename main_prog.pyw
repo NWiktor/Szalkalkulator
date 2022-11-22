@@ -32,7 +32,7 @@ import win32print
 # Third party imports
 from PyQt5.QtWidgets import (QApplication, QWidget, QMenu, QMainWindow,
 QAction, QGridLayout, QVBoxLayout, QHBoxLayout, QDesktopWidget, QPushButton,
-QMessageBox, QFormLayout, QLineEdit,
+QMessageBox, QFormLayout, QLineEdit, QInputDialog,
 QTreeWidgetItem, QTreeWidget, QSizePolicy, QLabel, QSpacerItem)
 from PyQt5.QtGui import (QFont, QPainter, QBrush, QColor, QFontMetrics)
 from PyQt5.QtCore import (Qt, QRect, QSize)
@@ -156,7 +156,7 @@ class MainWindow(QMainWindow):
         self.patterns = {} # Keys: nbr (int), pattern (list of ints), waste (int)
         self.total_stocks = "" # Formatted string of total nbr of stocks
         self.total_waste = "" # Formatted string of total waste perc. and length
-        self.setWindowTitle(f"Stock cutting calculator - {self.project_name}")
+        self.setWindowTitle(f"Stock cutting calculator")
         self._create_menubar()
         self._create_central_widget()
         self._create_status_bar()
@@ -501,7 +501,8 @@ class MainWindow(QMainWindow):
             filename = "new_summary.pdf"
 
         # Generate pdf
-        pdf = PDF(self.project_name, self.total_stocks, self.total_waste, orientation='L', unit='mm', format='A4')
+        pdf = PDF(self.project_name, self.total_stocks, self.total_waste,
+            orientation='L', unit='mm', format='A4')
         pdf.add_page()
         pdf.header() # Add header data
         pdf.generate_pattern_text(self.patterns)
@@ -519,8 +520,11 @@ class MainWindow(QMainWindow):
 
 
     def set_project_name(self):
-        pass
-        #self.project_name = ""
+        """  """
+        new_name, is_accepted = QInputDialog.getText(self, "Rename project","Name: ", QLineEdit.Normal, "")
+        if is_accepted and new_name != '':
+            self.project_name = new_name
+        self.setWindowTitle(f"Stock cutting calculator - {self.project_name}")
 
 
     # TODO: Change lic info
