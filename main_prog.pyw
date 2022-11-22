@@ -149,14 +149,14 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__(parent=None)
-        self.setWindowTitle("Stock cutting calculator")
+        self.project_name = ""
         self.purchased_length = 6000 # Length of stock material at delivery condition
         self.cutting_width = 3 # Width of the cutter disk, which goes to waste
         self.parts = {} # Saved parts key's: length (int), number (int) and label (str)
         self.patterns = {} # Keys: nbr (int), pattern (list of ints), waste (int)
         self.total_stocks = "" # Formatted string of total nbr of stocks
         self.total_waste = "" # Formatted string of total waste perc. and length
-        self.print_data = []
+        self.setWindowTitle(f"Stock cutting calculator - {self.project_name}")
         self._create_menubar()
         self._create_central_widget()
         self._create_status_bar()
@@ -166,11 +166,11 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('Fájl')
         # Add actions
+        set_project_name_action = QAction("Projekt elnevezése", self, triggered=self.set_project_name)
         clear_action = QAction("Memória törlése", self, triggered=self.clear_results)
-        file_menu.addAction(clear_action)
-        # test_action = QAction("Test", self, triggered=self.test)
-        # file_menu.addAction(test_action)
         about_action = QAction("About", self, triggered=self.about)
+        file_menu.addAction(set_project_name_action)
+        file_menu.addAction(clear_action)
         file_menu.addAction(about_action)
 
 
@@ -397,7 +397,7 @@ class MainWindow(QMainWindow):
 
         stock_item_list = []
         total_waste_length = 0
-        pattern_repr_list = []
+        total_nbr_of_stocks = 0
         waste_item_list = []
         self.patterns = {} # Set as empty
         self.delete_oversized_items()
@@ -410,17 +410,13 @@ class MainWindow(QMainWindow):
 
         while stock_item_list != []: # Run until empty (all item is evaluated)
             actual_stock = []
-            current_pattern_repr = "|" # String representation of current pattern
-            current_pattern_length = 0 # Length of current pattern
             remainder_length = self.purchased_length # the remainder value starts from full size
             del_item_list = []
 
             for i, stock_item in enumerate(stock_item_list):
                 # If the current stock item is smaller or equal to the remainder
                 if stock_item <= remainder_length:
-                    current_pattern_length += (stock_item + self.cutting_width)
                     remainder_length -= (stock_item + self.cutting_width) # Decrement remainder
-                    current_pattern_repr += f"| {stock_item:>4} "
                     actual_stock.append(stock_item)
                     del_item_list.append(i) # Add index of current item, to be removed
 
@@ -429,13 +425,10 @@ class MainWindow(QMainWindow):
                     if remainder_length < stock_item_list[-1]:
                         break
 
-            # Ha kész az iteráció összesítem a szálat
-            current_pattern_repr += f"|| --> {current_pattern_length} mm"
-
-            # Set pattern
+            # When iteration is ready, summerize and set pattern
+            total_nbr_of_stocks += 1 # Increment number of patterns
             uuid_str = str(uuid.uuid4())
             self.patterns[uuid_str] = {"pattern": actual_stock, "waste": remainder_length, "nbr" : 1}
-            pattern_repr_list.append(current_pattern_repr)
 
             if remainder_length > 0:
                 waste_item_list.append(remainder_length)
@@ -448,7 +441,7 @@ class MainWindow(QMainWindow):
 
         # Summarize calculations
         try:
-            total_calc_length = len(pattern_repr_list) * self.purchased_length
+            total_calc_length = total_nbr_of_stocks * self.purchased_length
             waste_percentage = float(total_waste_length) / float(total_calc_length) * 100
 
         except ZeroDivisionError:
@@ -458,7 +451,7 @@ class MainWindow(QMainWindow):
         self.check_for_multiple_patterns()
 
         # Using new class variables
-        self.total_stocks = f"{len(pattern_repr_list)} db ({self.purchased_length} mm)"
+        self.total_stocks = f"{total_nbr_of_stocks} db ({self.purchased_length} mm)"
         self.total_waste = f"{waste_percentage:.2f}% ({total_waste_length} mm)"
 
 
@@ -495,36 +488,26 @@ class MainWindow(QMainWindow):
         self.statusbar.showMessage("Eredmények törölve!", 3000)
 
 
-    def create_text_for_print(self):
-        """  """
-
-        # Ha készen vagyok, kiadom az eredményt
-        self.print_data.clear()
-        self.print_data.append("\n-- DARABOLÁSI TERV --")
-
-        # TODO: Move this to Stock item pattern (?)
-        for pattern in pattern_repr_list:
-            self.print_data.append(pattern) # Eredmeny kiírása
-
-        self.print_data.append("\n\n-- ÖSSZEGZÉS --")
-        self.print_data.append("\nSzükséges szálmennyiség: " + self.total_stocks)
-        self.print_data.append("\nHulladék mennyisége:" + self.total_waste)
-        self.print_data.append("\nHulladékok: " + str(waste_item_list)) # Hulladek darabok
-
-
     def create_pdf_report(self):
         """ Create PDF with the results. """
         # https://stackoverflow.com/questions/12723818/print-to-standard-printer-from-python
         # https://stackoverflow.com/questions/2878616/programmatically-print-a-pdf-file-specifying-printer
         # https://www.pythonguis.com/examples/python-pdf-report-generator/
         # https://towardsdatascience.com/creating-pdf-files-with-python-ad3ccadfae0f
-        # https://towardsdatascience.com/creating-pdf-files-with-python-ad3ccadfae0f
 
-        # Prepare text for printing
-        self.create_text_for_print()
+        if self.project_name != "":
+            filename = f"{self.project_name}_summary.pdf"
+        else:
+            filename = "new_summary.pdf"
 
         # Generate pdf
-        # TODO: Add code
+        pdf = PDF(self.project_name, self.total_stocks, self.total_waste, orientation='L', unit='mm', format='A4')
+        pdf.add_page()
+        pdf.header() # Add header data
+        pdf.generate_pattern_text(self.patterns)
+        pdf.generate_summary()
+        pdf.set_author('WV')
+        pdf.output(filename,'F')
 
         # Try to open file immediately
         try:
@@ -535,24 +518,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Finished", "PDF has been generated!")
 
 
-    def print_pdf(self):
-        """ Print results by default printer. """
-        filename = tempfile.mktemp (".txt")
-        with open(filename, "w") as file:
-            file.writelines(self.print_data)
-
-        win32api.ShellExecute (
-            0,
-            "print",
-            filename,
-            #
-            # If this is None, the default printer will
-            # be used anyway.
-            #
-            '/d:"%s"' % win32print.GetDefaultPrinter (),
-            ".",
-            0
-            )
+    def set_project_name(self):
+        pass
+        #self.project_name = ""
 
 
     # TODO: Change lic info
@@ -574,7 +542,64 @@ class MainWindow(QMainWindow):
         self.master.destroy()
 
 
-### Fő program
+class PDF(FPDF):
+    """  """
+
+    def __init__(self, project_name, total_stocks, total_waste, **kwargs):
+        super().__init__(**kwargs)
+        self.project_name = project_name
+        self.total_stocks = total_stocks
+        self.total_waste = total_waste
+
+
+    def header(self):
+        self.set_xy(0.0,0.0)
+        self.set_font('Arial', 'B', 16)
+        self.cell(w=297, h=15, align='C',
+            txt=f"ÖSSZEGZÉS / SUMMARY - {self.project_name}", border=0, ln=1)
+
+
+    def generate_summary(self):
+        # Add summary header
+        self.set_xy(10, self.get_y())
+        self.set_font('Arial', 'B', 12)
+        self.cell(w=277, h=10, align='L', txt="RENDELÉSI ADATOK / ORDERING INFORMATION", border=0, ln=1)
+
+        # Add summary text
+        txt = (f"Szükséges szálmennyiség: {self.total_stocks}\n"
+                + f"Hulladék mennyisége: {self.total_waste}")
+        self.set_font('Arial', '', 10)
+        self.multi_cell(0, 7, txt, border=0)
+
+
+    def generate_pattern_text(self, patterns):
+        # Add pattern header
+        self.set_xy(10, self.get_y())
+        self.set_font('Arial', 'B', 12)
+        self.cell(w=277, h=10, align='L', txt="DARABOLÁSI TERV / CUTTING PATTERNS", border=0, ln=1)
+
+        # Add pattern text
+        print_text = ""
+        self.set_font('Arial', '', 10)
+
+        for i, pattern in patterns.items():
+            cur_pat_length = 0
+            cur_pat_repr = "|"
+
+            for item in pattern["pattern"]:
+                cur_pat_length += int(item)
+                cur_pat_repr += f"| {int(item)} "
+
+            cur_pat_repr += f"|| --> {cur_pat_length} mm"
+
+            for i in range(0, pattern["nbr"]):
+                print_text += (cur_pat_repr + "\n")
+
+        print_text += "\n" # Add empty line for separation
+        self.multi_cell(0, 7, print_text, border=0)
+
+
+### Include guard
 if __name__ == '__main__':
     app = QApplication([])
     app.setStyle('Fusion')
@@ -583,10 +608,3 @@ if __name__ == '__main__':
     main.center()
     app.exec()
     sys.exit()
-
-
-    # def test(self):
-    #     """  """
-    #     w = self.frameGeometry().width()
-    #     h = self.frameGeometry().height()
-    #     print(f"Window size: {w}x{h}")
