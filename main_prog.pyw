@@ -23,10 +23,7 @@ Wetzl Viktor - 2021.04.01 - All rights reserved
 import uuid
 import sys
 import os
-import tempfile
 from fpdf import FPDF
-import win32api
-import win32print
 
 # pylint: disable = no-name-in-module
 # Third party imports
@@ -156,7 +153,7 @@ class MainWindow(QMainWindow):
         self.patterns = {} # Keys: nbr (int), pattern (list of ints), waste (int)
         self.total_stocks = "" # Formatted string of total nbr of stocks
         self.total_waste = "" # Formatted string of total waste perc. and length
-        self.setWindowTitle(f"Stock cutting calculator")
+        self.setWindowTitle("Stock cutting calculator")
         self._create_menubar()
         self._create_central_widget()
         self._create_status_bar()
