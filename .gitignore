@@ -4,6 +4,7 @@
 
 # Ignore developer folder (output for debug files, etc.)
 /dev/
+/.idea
 
 # Ignore generated files
 *.zip
