@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
 
         data_field_h.addLayout(data_field)
         data_field_h.addStretch()
-        layout.addLayout(data_field_h,0,0)
+        layout.addLayout(data_field_h, 0, 0)
 
         # List
         stock_layout = QVBoxLayout()
@@ -327,7 +327,9 @@ class MainWindow(QMainWindow):
 
             # Set summary line
             self.pattern_summary.setText(
-            f"Összesen: {self.total_stocks} / Veszteség: {self.total_waste}")
+                    f"Összesen: {self.total_stocks}"
+                    f" / Veszteség: {self.total_waste}"
+            )
 
         self.pattern_table.update()
 
@@ -478,7 +480,7 @@ class MainWindow(QMainWindow):
         del_uuid = []
 
         for k, pattern in self.patterns.items():
-            if last_pattern is not None: # Ha már van adat a last_patternben
+            if last_pattern is not None:  # Ha már van adat a last_patternben
                 # Ha az aktuális pattern egyezik az előzővel
                 if last_pattern == (pattern["pattern"]):
                     pattern["nbr"] = last_nbr + 1  # Increment pattern nbr
